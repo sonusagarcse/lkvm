@@ -4,8 +4,32 @@ error_reporting(0);
 // Include cache helper
 require_once __DIR__ . '/cache_helper.php';
 
+// Load environment variables from .env file
+if (file_exists(__DIR__ . '/.env')) {
+    $lines = file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        if (strpos($line, '=') !== false) {
+            list($name, $value) = explode('=', $line, 2);
+            $name = trim($name);
+            $value = trim($value);
+            if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+                putenv(sprintf('%s=%s', $name, $value));
+                $_ENV[$name] = $value;
+                $_SERVER[$name] = $value;
+            }
+        }
+    }
+}
+
+// Database credentials
+$dbHost = getenv('DB_HOST') !== false ? getenv('DB_HOST') : "localhost";
+$dbUser = getenv('DB_USER') !== false ? getenv('DB_USER') : "root";
+$dbPass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : "";
+$dbName = getenv('DB_NAME') !== false ? getenv('DB_NAME') : "lkvm";
+
 // Use persistent connection for better performance
-$con = mysqli_connect("localhost", "root", "", "lkvm");
+$con = mysqli_connect($dbHost, $dbUser, $dbPass, $dbName);
 
 if (!$con) {
     die("Connection failed: " . mysqli_connect_error());
