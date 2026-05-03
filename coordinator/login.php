@@ -1,7 +1,7 @@
 <?php
 session_start();
-// Check if user is already logged in as Super Admin
-if (isset($_SESSION['admin_id']) && $_SESSION['admin_type'] == 1) {
+// Check if user is already logged in
+if (isset($_SESSION['admin_id']) && $_SESSION['admin_type'] == 2) {
     header("Location: index.php");
     exit();
 }
@@ -15,14 +15,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = mysqli_real_escape_string($con, $_POST['email']);
     $password = mysqli_real_escape_string($con, $_POST['password']);
 
-    // Check in admin_login table for Super Admins (utype 1)
+    // Check in admin_login table for Coordinators (utype 2)
     $query = "SELECT * FROM admin_login WHERE email = '$email' AND status = 1";
     $result = mysqli_query($con, $query);
 
     if (mysqli_num_rows($result) > 0) {
         $row = mysqli_fetch_assoc($result);
-        if ($row['utype'] != 1) {
-            $error = "This login is for Administrators only.";
+        if ($row['utype'] != 2) {
+            $error = "This login is for Coordinators only.";
         } else if ($password == $row['pass']) {
             $_SESSION['admin_id'] = $row['id'];
             $_SESSION['admin_name'] = $row['uname'];
@@ -44,7 +44,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - <?php echo $SITE_NAME; ?></title>
+    <title>Coordinator Login - <?php echo $SITE_NAME; ?></title>
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome -->
@@ -200,8 +200,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <div class="auth-icon-wrapper">
                             <i class="fas fa-shield-alt fa-2x text-white"></i>
                         </div>
-                        <h2 class="auth-title mb-2">Secure Login</h2>
-                        <p class="text-muted small mb-4">Enter your credentials to access the LKVM dashboard</p>
+                        <h2 class="auth-title mb-2">Coordinator Login</h2>
+                        <p class="text-muted small mb-4">Enter your credentials to access the LKVM Coordinator panel</p>
 
                         <?php if ($error): ?>
                             <div class="alert alert-danger py-2 small border-0 bg-danger bg-opacity-10 text-danger mb-4">

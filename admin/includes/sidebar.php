@@ -24,6 +24,7 @@
         </li>
 
 
+        <?php if ($_SESSION['admin_type'] == 1): ?>
         <li class="nav-item">
             <a href="home_settings.php"
                 class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'home_settings.php' ? 'active' : ''; ?>">
@@ -32,7 +33,6 @@
             </a>
         </li>
 
-
         <li class="nav-item">
             <a href="branches.php"
                 class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'branches.php' ? 'active' : ''; ?>">
@@ -40,6 +40,52 @@
                 <span>Branches</span>
             </a>
         </li>
+        <?php endif; ?>
+
+        <!-- Employee Management Dropdown (Visible to all admins/coordinators) -->
+        <li class="nav-item">
+            <a class="nav-link <?php echo in_array(basename($_SERVER['PHP_SELF']), ['emp_manage.php', 'emp_attendance_upload.php', 'emp_salary_slips.php', 'emp_slip_history.php', 'emp_settings.php']) ? '' : 'collapsed'; ?>" data-bs-toggle="collapse" href="#employeeCollapse" role="button" aria-expanded="<?php echo in_array(basename($_SERVER['PHP_SELF']), ['emp_manage.php', 'emp_attendance_upload.php', 'emp_salary_slips.php', 'emp_slip_history.php', 'emp_settings.php']) ? 'true' : 'false'; ?>" aria-controls="employeeCollapse" style="display: flex; align-items: center;">
+                <i class="fas fa-users-cog"></i>
+                <span class="ms-1">Employee</span>
+                <i class="fas fa-chevron-down ms-auto" style="font-size: 0.8em; margin-left: auto;"></i>
+            </a>
+            <div class="collapse <?php echo in_array(basename($_SERVER['PHP_SELF']), ['emp_manage.php', 'emp_attendance_upload.php', 'emp_salary_slips.php', 'emp_slip_history.php', 'emp_settings.php']) ? 'show' : ''; ?>" id="employeeCollapse">
+                <ul class="nav flex-column ms-3 mt-1" style="border-left: 2px solid rgba(255,255,255,0.1); padding-left: 10px;">
+                    <li class="nav-item">
+                        <a href="emp_manage.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'emp_manage.php' ? 'active' : ''; ?>" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-user-edit" style="font-size: 0.8em; width: 20px;"></i>
+                            <span>All Employees</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="emp_attendance_upload.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'emp_attendance_upload.php' ? 'active' : ''; ?>" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-upload" style="font-size: 0.8em; width: 20px;"></i>
+                            <span>Attendance</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="emp_salary_slips.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'emp_salary_slips.php' ? 'active' : ''; ?>" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-file-invoice-dollar" style="font-size: 0.8em; width: 20px;"></i>
+                            <span>Salary Slips</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="emp_slip_history.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'emp_slip_history.php' ? 'active' : ''; ?>" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-history" style="font-size: 0.8em; width: 20px;"></i>
+                            <span>Slip History</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="emp_settings.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'emp_settings.php' ? 'active' : ''; ?>" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-cogs" style="font-size: 0.8em; width: 20px;"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </li>
+        <!-- End Employee Management -->
+
 
         <li class="nav-item">
             <a href="students.php"
@@ -129,6 +175,7 @@
             </a>
         </li>
 
+        <?php if ($_SESSION['admin_type'] == 1): ?>
         <li class="nav-item">
             <a href="donations.php"
                 class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'donations.php' ? 'active' : ''; ?>">
@@ -160,6 +207,7 @@
                 <span>Settings</span>
             </a>
         </li>
+        <?php endif; ?>
     </ul>
     </div>
 </nav>

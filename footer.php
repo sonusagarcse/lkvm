@@ -90,6 +90,9 @@ $EMAIL_ID = $CONTACT_EMAIL ?? $settings['email'] ?? 'lkvmimamganj@gmail.com';
                             <li id="menu-item-2048"
                                 class="menu-item menu-item-type-post_type menu-item-object-page menu-item-2048"><a
                                     href="<?php echo $SITE_URL; ?>/admin" target="_blank">Admin Login</a></li>
+                            <li id="menu-item-2049"
+                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-2049"><a
+                                    href="<?php echo $SITE_URL; ?>/coordinator" target="_blank">Centre Coordinator Login</a></li>
                         </ul>
                     </div>
                 </div>
