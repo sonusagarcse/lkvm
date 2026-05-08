@@ -34,6 +34,14 @@
         </li>
 
         <li class="nav-item">
+            <a href="manage_pages.php"
+                class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'manage_pages.php' ? 'active' : ''; ?>">
+                <i class="fas fa-file-alt"></i>
+                <span>Manage Pages</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
             <a href="branches.php"
                 class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'branches.php' ? 'active' : ''; ?>">
                 <i class="fas fa-code-branch"></i>

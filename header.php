@@ -1,4 +1,46 @@
 <?php require_once 'includes/visitor_tracker.php'; ?>
+<?php
+// Generate dynamic menu
+$dynamic_menu_html = '';
+$dynamic_menu_html .= '<li class="mega-menu hide-header menu-item menu-item-type-custom menu-item-object-custom"><a href="'.$SITE_URL.'/index">Home</a></li>';
+
+$category_ids = [5, 14, 17, 15, 18];
+foreach ($category_ids as $cat_id) {
+    $cat_query = mysqli_query($con, "SELECT name FROM webpage_category WHERE id = {$cat_id} AND status = 1");
+    if (mysqli_num_rows($cat_query) > 0) {
+        $cat = mysqli_fetch_assoc($cat_query);
+        $display_name = ($cat_id == 5) ? 'Who We Are' : htmlspecialchars($cat['name']);
+        
+        $page_query = mysqli_query($con, "SELECT name, slug FROM webpage WHERE cid = {$cat_id} AND status = 1 ORDER BY id ASC");
+        if (mysqli_num_rows($page_query) > 0) {
+            $dynamic_menu_html .= '<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children">';
+            $dynamic_menu_html .= '<a href="#">' . $display_name . '</a>';
+            $dynamic_menu_html .= '<ul class="sub-menu">';
+            while ($page = mysqli_fetch_assoc($page_query)) {
+                $dynamic_menu_html .= '<li class="menu-item"><a href="' . $SITE_URL . '/' . $page['slug'] . '">' . htmlspecialchars($page['name']) . '</a></li>';
+            }
+            $dynamic_menu_html .= '</ul></li>';
+        }
+    }
+}
+
+$dynamic_menu_html .= '
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children">
+    <a href="#">Media</a>
+    <ul class="sub-menu">
+        <li class="menu-item"><a href="'.$SITE_URL.'/media_room">Media Room</a></li>
+        <li class="menu-item"><a href="'.$SITE_URL.'/photo_gallery">Photo Gallery</a></li>
+        <li class="menu-item"><a href="'.$SITE_URL.'/video_gallery">Video Gallery</a></li>
+        <li class="menu-item"><a href="'.$SITE_URL.'/news">News</a></li>
+        <li class="menu-item"><a href="'.$SITE_URL.'/event">Event</a></li>
+        <li class="menu-item"><a href="'.$SITE_URL.'/press_coverage">Press Coverage</a></li>
+        <li class="menu-item"><a href="'.$SITE_URL.'/study_materials">Study Materials</a></li>
+    </ul>
+</li>
+<li class="menu-item"><a href="'.$SITE_URL.'/contact_us">Contact us</a></li>
+<li class="menu-item"><a href="'.$SITE_URL.'/donate_us" style="background:#fdc800; padding:10px; border-radius:10px;"><blink>Donate us</blink></a></li>
+';
+?>
 <header id="masthead" class="site-header">
     <div id="tophead">
         <div class="container">
@@ -131,163 +173,8 @@
                 <div id="site-navigation" class="main-navigation">
                     <nav class="menu-main-menu-container">
                         <ul id="menu-main-menu" class="menu">
-                            <li id="menu-item-57"
-                                class="mega-menu hide-header menu-item menu-item-type-custom menu-item-object-custom current-menu-ancestor menu-item-57">
-                                <a href="<?php echo $SITE_URL; ?>/index">Home</a>
-                            </li>
-
-                            <li id="menu-item-82"
-                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-82">
-                                <a href="#">Who We Are</a>
-                                <ul class="sub-menu">
-                                    <li id="menu-item-883"
-                                        class="menu-item menu-item-type-post_type menu-item-object-lp_course menu-item-883">
-                                        <a href="<?php echo $SITE_URL; ?>/about_us">About us</a>
-                                    </li>
-                                    <li id="menu-item-1690"
-                                        class="menu-item menu-item-type-custom menu-item-object-custom menu-item-1690">
-                                        <a href="<?php echo $SITE_URL; ?>/vision_mission">Vision & Mission</a>
-                                    </li>
-                                    <li id="menu-item-1691"
-                                        class="menu-item menu-item-type-custom menu-item-object-custom menu-item-1691">
-                                        <a href="<?php echo $SITE_URL; ?>/our_team">Our Team</a>
-                                    </li>
-                                    <li id="menu-item-1691"
-                                        class="menu-item menu-item-type-custom menu-item-object-custom menu-item-1691">
-                                        <a href="<?php echo $SITE_URL; ?>/annual_report">Annual Report</a>
-                                    </li>
-                                    <li id="menu-item-1691"
-                                        class="menu-item menu-item-type-custom menu-item-object-custom menu-item-1691">
-                                        <a href="<?php echo $SITE_URL; ?>/where_we_work">Where We Work</a>
-                                    </li>
-                                </ul>
-                            </li>
-                            <li id="menu-item-83"
-                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-83">
-                                <a href="#">Our Work</a>
-                                <ul class="sub-menu">
-                                    <li id="menu-item-957"
-                                        class="menu-item menu-item-type-post_type menu-item-object-page menu-item-957">
-                                        <a href="https://talk.lkvmbihar.in/">Talk Institute</a>
-                                    </li>
-                                    <li id="menu-item-956"
-                                        class="menu-item menu-item-type-post_type menu-item-object-page menu-item-956">
-                                        <a href="<?php echo $SITE_URL; ?>/skill_development">Skill Development</a>
-                                    </li>
-                                    <li id="menu-item-955"
-                                        class="menu-item menu-item-type-post_type menu-item-object-page menu-item-955">
-                                        <a href="<?php echo $SITE_URL; ?>/health">Health</a>
-                                    </li>
-                                    <li id="menu-item-955"
-                                        class="menu-item menu-item-type-post_type menu-item-object-page menu-item-955">
-                                        <a href="<?php echo $SITE_URL; ?>/livelihood">Livelihood</a>
-                                    </li>
-                                    <li id="menu-item-955"
-                                        class="menu-item menu-item-type-post_type menu-item-object-page menu-item-955">
-                                        <a href="<?php echo $SITE_URL; ?>/environment">Environment</a>
-                                    </li>
-                                </ul>
-                            </li>
-                            <li id="menu-item-84"
-                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-84">
-                                <a href="#">Achievement</a>
-                                <ul class="sub-menu">
-                                    <li id="menu-item-886"
-                                        class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886">
-                                        <a href="<?php echo $SITE_URL; ?>/impact">Impact</a>
-                                    </li>
-                                    <li id="menu-item-886"
-                                        class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886">
-                                        <a href="<?php echo $SITE_URL; ?>/innovations">Innovations</a>
-                                    </li>
-                                    <li id="menu-item-886"
-                                        class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886">
-                                        <a href="<?php echo $SITE_URL; ?>/testimonial">Testimonial</a>
-                                    </li>
-                                    <li id="menu-item-886"
-                                        class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886">
-                                        <a href="<?php echo $SITE_URL; ?>/award_recognition">Award & Recognition</a>
-                                    </li>
-                                </ul>
-                            </li>
-
-                            <li id="menu-item-84"
-                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-84">
-                                <a href="#">Partners</a>
-                                <ul class="sub-menu">
-                                    <li id="menu-item-886"
-                                        class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886">
-                                        <a href="<?php echo $SITE_URL; ?>/government_partners">Government Partners</a>
-                                    </li>
-                                    <li id="menu-item-886"
-                                        class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886">
-                                        <a href="<?php echo $SITE_URL; ?>/corporate_partners">Corporate Partners</a>
-                                    </li>
-                                    <li id="menu-item-886"
-                                        class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886">
-                                        <a href="<?php echo $SITE_URL; ?>/institutions">Institution & Organization</a>
-                                    </li>
-                                </ul>
-                            </li>
-
-                            <li id="menu-item-84"
-                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-84">
-                                <a href="#">Get Involved</a>
-                                <ul class="sub-menu">
-                                    <li id="menu-item-86"
-                                        class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                            href="<?php echo $SITE_URL; ?>/Volunteer">Volunteer/in-team</a></li>
-                                    <li id="menu-item-86"
-                                        class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                            href="<?php echo $SITE_URL; ?>/partner_us">Partner with us</a></li>
-                                    <li id="menu-item-86"
-                                        class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                            href="<?php echo $SITE_URL; ?>/career">Career</a></li>
-                                </ul>
-                            </li>
-
-                            <li id="menu-item-84"
-                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-84">
-                                <a href="#">Media</a>
-                                <ul class="sub-menu">
-                                    <li id="menu-item-86"
-                                        class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                            href="<?php echo $SITE_URL; ?>/media_room">Media Room</a></li>
-                                    <li id="menu-item-86"
-                                        class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                            href="<?php echo $SITE_URL; ?>/photo_gallery">Photo Gallery</a></li>
-                                    <li id="menu-item-86"
-                                        class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                            href="<?php echo $SITE_URL; ?>/video_gallery">Video Gallery</a></li>
-                                    <li id="menu-item-86"
-                                        class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                            href="<?php echo $SITE_URL; ?>/news">News</a></li>
-                                    <!--<li id="menu-item-86" class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a href="<?php echo $SITE_URL; ?>/publications">Publications</a></li>
-<li id="menu-item-86" class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a href="<?php echo $SITE_URL; ?>/press_release">Press Release</a></li>-->
-                                    <li id="menu-item-86"
-                                        class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                            href="<?php echo $SITE_URL; ?>/event">Event</a></li>
-                                    <li id="menu-item-86"
-                                        class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                            href="<?php echo $SITE_URL; ?>/press_coverage">Press Coverage</a></li>
-                                    <li id="menu-item-86"
-                                        class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                            href="<?php echo $SITE_URL; ?>/study_materials">Study Materials</a></li>
-                                </ul>
-                            </li>
-                            <li id="menu-item-84"
-                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-84"><a
-                                    href="<?php echo $SITE_URL; ?>/contact_us">Contact us</a>
-                            </li>
-                            <li id="menu-item-84"
-                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-84"><a
-                                    href="<?php echo $SITE_URL; ?>/donate_us"
-                                    style="background:#fdc800; padding:10px; border-radius:10px;">
-                                    <blink>Donate us</blink>
-                                </a>
-                            </li>
-
-                        </ul>
+<?php echo $dynamic_menu_html; ?>
+</ul>
                     </nav>
                 </div>
             </div>
@@ -369,144 +256,8 @@
             <nav class="menu-main-menu-container">
 
                 <ul id="menu-main-menu" class="menu">
-                    <li id="menu-item-57"
-                        class="mega-menu hide-header menu-item menu-item-type-custom menu-item-object-custom current-menu-ancestor menu-item-57">
-                        <a href="<?php echo $SITE_URL; ?>/index">Home</a>
-                    </li>
-
-                    <li id="menu-item-82"
-                        class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-82">
-                        <a href="#">Who We Are</a>
-                        <ul class="sub-menu">
-                            <li id="menu-item-883"
-                                class="menu-item menu-item-type-post_type menu-item-object-lp_course menu-item-883"><a
-                                    href="<?php echo $SITE_URL; ?>/about_us">About us</a></li>
-                            <li id="menu-item-1690"
-                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-1690"><a
-                                    href="<?php echo $SITE_URL; ?>/vision_mission">Vision & Mission</a></li>
-                            <li id="menu-item-1691"
-                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-1691"><a
-                                    href="<?php echo $SITE_URL; ?>/our_team">Our Team</a></li>
-                            <li id="menu-item-1691"
-                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-1691"><a
-                                    href="<?php echo $SITE_URL; ?>/annual_report">Annual Report</a></li>
-                            <li id="menu-item-1691"
-                                class="menu-item menu-item-type-custom menu-item-object-custom menu-item-1691"><a
-                                    href="<?php echo $SITE_URL; ?>/where_we_work">Where We Work</a></li>
-                        </ul>
-                    </li>
-                    <li id="menu-item-83"
-                        class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-83">
-                        <a href="#">Our Work</a>
-                        <ul class="sub-menu">
-                            <li id="menu-item-957"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-957"><a
-                                    href="https://education.lkvmbihar.in/">Education</a></li>
-                            <li id="menu-item-956"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-956"><a
-                                    href="<?php echo $SITE_URL; ?>/skill_development">Skill Development</a></li>
-                            <li id="menu-item-955"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-955"><a
-                                    href="<?php echo $SITE_URL; ?>/health">Health</a></li>
-                            <li id="menu-item-955"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-955"><a
-                                    href="<?php echo $SITE_URL; ?>/livelihood">Livelihood</a></li>
-                            <li id="menu-item-955"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-955"><a
-                                    href="<?php echo $SITE_URL; ?>/environment">Environment</a></li>
-                        </ul>
-                    </li>
-                    <li id="menu-item-84"
-                        class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-84">
-                        <a href="#">Achievement</a>
-                        <ul class="sub-menu">
-                            <li id="menu-item-886"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886"><a
-                                    href="<?php echo $SITE_URL; ?>/impact">Impact</a></li>
-                            <li id="menu-item-886"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886"><a
-                                    href="<?php echo $SITE_URL; ?>/innovations">Innovations</a></li>
-                            <li id="menu-item-886"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886"><a
-                                    href="<?php echo $SITE_URL; ?>/testimonial">Testimonial</a></li>
-                            <li id="menu-item-886"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886"><a
-                                    href="<?php echo $SITE_URL; ?>/award_recognition">Award & Recognition</a></li>
-                        </ul>
-                    </li>
-
-                    <li id="menu-item-84"
-                        class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-84">
-                        <a href="#">Partners</a>
-                        <ul class="sub-menu">
-                            <li id="menu-item-886"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886"><a
-                                    href="<?php echo $SITE_URL; ?>/government_partners">Government Partners</a></li>
-                            <li id="menu-item-886"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886"><a
-                                    href="<?php echo $SITE_URL; ?>/corporate_partners">Corporate Partners</a></li>
-                            <li id="menu-item-886"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-886"><a
-                                    href="<?php echo $SITE_URL; ?>/institutions">Institution & Organization</a></li>
-                        </ul>
-                    </li>
-
-                    <li id="menu-item-84"
-                        class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-84">
-                        <a href="#">Get Involved</a>
-                        <ul class="sub-menu">
-                            <li id="menu-item-86"
-                                class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                    href="<?php echo $SITE_URL; ?>/Volunteer">Volunteer/in-team</a></li>
-                            <li id="menu-item-86"
-                                class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                    href="<?php echo $SITE_URL; ?>/partner_us">Partner with us</a></li>
-                            <li id="menu-item-86"
-                                class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                    href="<?php echo $SITE_URL; ?>/career">Career</a></li>
-                        </ul>
-                    </li>
-
-                    <li id="menu-item-84"
-                        class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-84">
-                        <a href="#">Media</a>
-                        <ul class="sub-menu">
-                            <li id="menu-item-86"
-                                class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                    href="<?php echo $SITE_URL; ?>/media_room">Media Room</a></li>
-                            <li id="menu-item-86"
-                                class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                    href="<?php echo $SITE_URL; ?>/photo_gallery">Photo Gallery</a></li>
-                            <li id="menu-item-86"
-                                class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                    href="<?php echo $SITE_URL; ?>/video_gallery">Video Gallery</a></li>
-                            <li id="menu-item-86"
-                                class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                    href="<?php echo $SITE_URL; ?>/news">News</a></li>
-                            <!--<li id="menu-item-86" class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a href="<?php echo $SITE_URL; ?>/publications">Publications</a></li>
-<li id="menu-item-86" class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a href="<?php echo $SITE_URL; ?>/press_release">Press Release</a></li>-->
-                            <li id="menu-item-86"
-                                class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                    href="<?php echo $SITE_URL; ?>/event">Event</a></li>
-                            <li id="menu-item-86"
-                                class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                    href="<?php echo $SITE_URL; ?>/press_coverage">Press Coverage</a></li>
-                            <li id="menu-item-86"
-                                class="menu-item menu-item-type-post_type menu-item-object-post menu-item-86"><a
-                                    href="<?php echo $SITE_URL; ?>/study_materials">Study Materials</a></li>
-                        </ul>
-                    </li>
-                    <li id="menu-item-84" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-84">
-                        <a href="<?php echo $SITE_URL; ?>/contact_us">Contact us</a>
-                    </li>
-                    <li id="menu-item-84" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-84">
-                        <a href="<?php echo $SITE_URL; ?>/donate_us"
-                            style="background:#fdc800; padding:10px; border-radius:10px;">
-                            <blink>Donate us</blink>
-                        </a>
-                    </li>
-
-                </ul>
+<?php echo $dynamic_menu_html; ?>
+</ul>
             </nav>
         </div>
     </div>

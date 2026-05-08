@@ -68,7 +68,7 @@ background-image: url("images/preloader.gif");
 	<?php }}else{?>
 	</div>
 	<div class="form"> 
-                            <form action="../code/manage_member?flag=add" method="post">
+                            <form action="code/manage_member?flag=add" method="post">
                             <div class="row">
 						<?php
 						   $sel=$con->prepare("select * from registration order by id DESC LIMIT 1");

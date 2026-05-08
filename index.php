@@ -36,6 +36,7 @@ header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 300) . ' GMT');
                                         <?php include('section5.php'); ?>
 
                                         <?php include('section7.php'); ?>
+                                         <?php include('section_recent_students.php'); ?>
                                         <?//php include('section8.php'); ?>
                                         <?php include('section6.php'); ?>
                                         <?php include('section9.php'); ?>

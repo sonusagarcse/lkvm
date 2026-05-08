@@ -7,10 +7,13 @@ RewriteEngine On
 # Remove .php extension
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}.php -f
-# Remove .php extension
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteRule ^([^\.]+)$ $1.php [NC,L]
+
+# Dynamic Page Routing
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME}.php !-f
+RewriteRule ^([a-zA-Z0-9-]+)/?$ page.php?slug=$1 [QSA,L]
 
 # Handle 404 errors
 ErrorDocument 404 /404.php

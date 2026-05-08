@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../connection.php';
-if (!isset($_SESSION['admin_id'])) {
+if (!isset($_SESSION['coord_id'])) {
     header("Location: login.php");
     exit();
 }

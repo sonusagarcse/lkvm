@@ -30,16 +30,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $full = floatval($_POST['full_day_hours']);
         $half = floatval($_POST['half_day_hours']);
         $divisor = intval($_POST['salary_divisor']);
+        $template_type = mysqli_real_escape_string($con, $_POST['slip_template_type']);
         
-        $update = mysqli_query($con, "UPDATE emp_settings SET full_day_hours='$full', half_day_hours='$half', salary_divisor='$divisor' WHERE id=" . $settings['id']);
+        $update = mysqli_query($con, "UPDATE emp_settings SET full_day_hours='$full', half_day_hours='$half', salary_divisor='$divisor', slip_template_type='$template_type' WHERE id=" . $settings['id']);
         if ($update) {
-            $message = "Rules updated successfully.";
+            $message = "Settings updated successfully.";
             $messageType = "success";
             $settings['full_day_hours'] = $full;
             $settings['half_day_hours'] = $half;
             $settings['salary_divisor'] = $divisor;
+            $settings['slip_template_type'] = $template_type;
         } else {
-            $message = "Error updating rules.";
+            $message = "Error updating settings.";
             $messageType = "danger";
         }
     }
@@ -113,19 +115,26 @@ include 'includes/header.php';
         <?php endif; ?>
 
         <div class="row">
-            <!-- Working Hours Rules -->
+            <!-- Salary & Template Settings -->
             <div class="col-md-4 mb-4">
                 <div class="glass-panel p-4 h-100">
-                    <h4>Salary & Attendance Rules</h4>
+                    <h4>Salary & Template Settings</h4>
                     <hr>
                     <form method="POST">
                         <div class="mb-3">
-                            <label class="form-label">Fixed Monthly Days</label>
-                            <input type="number" name="salary_divisor" class="form-control" value="<?php echo $settings['salary_divisor']; ?>" required>
+                            <label class="form-label">Slip Template Type</label>
+                            <select name="slip_template_type" class="form-control" onchange="toggleTemplateEditor(this.value)">
+                                <option value="Default" <?php echo ($settings['slip_template_type'] ?? 'Default') == 'Default' ? 'selected' : ''; ?>>Default (Modern CSS Template)</option>
+                                <option value="Custom" <?php echo ($settings['slip_template_type'] ?? 'Default') == 'Custom' ? 'selected' : ''; ?>>Custom (Image Overlay Template)</option>
+                            </select>
                             <div class="form-text text-info">
                                 <i class="fas fa-info-circle me-1"></i>
-                                Used as divisor: (Base Salary / <strong><?php echo $settings['salary_divisor']; ?></strong>)
+                                Choose "Default" for the premium CSS-based design.
                             </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fixed Monthly Days</label>
+                            <input type="number" name="salary_divisor" class="form-control" value="<?php echo $settings['salary_divisor']; ?>" required>
                         </div>
                         <div class="mb-3">
                             <label>Full Day Minimum Hours</label>
@@ -135,7 +144,7 @@ include 'includes/header.php';
                             <label>Half Day Minimum Hours</label>
                             <input type="number" step="0.1" name="half_day_hours" class="form-control" value="<?php echo $settings['half_day_hours']; ?>" required>
                         </div>
-                        <button type="submit" name="update_rules" class="btn btn-primary w-100">Save Rules</button>
+                        <button type="submit" name="update_rules" class="btn btn-primary w-100">Save Settings</button>
                     </form>
                 </div>
             </div>
@@ -180,7 +189,7 @@ include 'includes/header.php';
                 </div>
             </div>
 
-            <div class="col-md-4 mb-4">
+            <div class="col-md-4 mb-4 custom-template-section" style="<?php echo ($settings['slip_template_type'] ?? 'Default') == 'Custom' ? '' : 'display:none;'; ?>">
                 <div class="glass-panel p-4 h-100">
                     <h4>Salary Slip Template Background</h4>
                     <hr>
@@ -199,7 +208,7 @@ include 'includes/header.php';
 
         <!-- Template Editor -->
         <?php if ($settings['slip_bg_image']): ?>
-        <div class="glass-panel p-4 mb-4">
+        <div class="glass-panel p-4 mb-4 custom-template-section" style="<?php echo ($settings['slip_template_type'] ?? 'Default') == 'Custom' ? '' : 'display:none;'; ?>">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4>Template Editor</h4>
                 <form method="POST" id="savePositionsForm">
@@ -349,6 +358,13 @@ include 'includes/header.php';
         const arr = rgb.match(/\d+/g);
         if(!arr) return '#000000';
         return "#" + ((1 << 24) + (parseInt(arr[0]) << 16) + (parseInt(arr[1]) << 8) + parseInt(arr[2])).toString(16).slice(1);
+    }
+
+    function toggleTemplateEditor(type) {
+        const sections = document.querySelectorAll('.custom-template-section');
+        sections.forEach(s => {
+            s.style.display = (type === 'Custom') ? '' : 'none';
+        });
     }
 </script>
 <style>

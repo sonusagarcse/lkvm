@@ -52,9 +52,19 @@ if (isset($_GET['delete'])) {
 ?>
 
 <div class="row mb-4">
-    <div class="col-12 d-flex justify-content-between align-items-center">
-        <h2 class="h3 mb-0 text-gray-800">Student Management</h2>
-        <!-- Add Student Button could go here if Admin manually adds students -->
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h2 class="h3 mb-0 text-gray-800 d-flex align-items-center flex-wrap gap-2">
+            <span>Student Management</span>
+            <span class="badge bg-primary fs-6 shadow-sm fw-bold">
+                <i class="fas fa-database me-1"></i> DB: <?php echo htmlspecialchars($dbName); ?>
+            </span>
+            <span class="badge bg-secondary fs-6 shadow-sm fw-bold">
+                <i class="fas fa-table me-1"></i> Table: registration
+            </span>
+        </h2>
+        <a href="add_student.php" class="btn btn-success rounded-pill px-4 shadow-sm fw-bold">
+            <i class="fas fa-user-plus me-2"></i>Add Recent Joined Student
+        </a>
     </div>
 </div>
 
@@ -106,8 +116,8 @@ if (isset($_GET['delete'])) {
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Reg No</th>
-                        <th>Student Name</th>
+                        <th>Reg & Roll No</th>
+                        <th>Student Name & DB Login Credentials</th>
                         <th>Branch</th>
                         <th>Course</th>
                         <th>Reg Date</th>
@@ -120,22 +130,31 @@ if (isset($_GET['delete'])) {
                     if (mysqli_num_rows($result) > 0) {
                         while ($row = mysqli_fetch_assoc($result)) {
                             $status = $row['status'] == 1 ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>';
-                            // Link to student_details.php (to be created)
                             $viewLink = "student_details.php?id={$row['id']}";
 
                             echo "<tr>
-                                    <td><span class='badge bg-light text-dark border'>{$row['regno']}</span></td>
                                     <td>
-                                        <div class='fw-bold'>{$row['name']}</div>
-                                        <small class='text-muted'>Any: {$row['father']}</small>
+                                        <div class='mb-1'><span class='badge bg-light text-dark border'>Reg: {$row['regno']}</span></div>
+                                        <div><span class='badge bg-light text-dark border'>Roll: {$row['rollno']}</span></div>
+                                    </td>
+                                    <td>
+                                        <div class='fw-bold text-dark fs-6'>{$row['name']}</div>
+                                        <div class='mt-1 small'>
+                                            <span class='me-2 badge bg-success-subtle text-success border border-success-subtle'><i class='fas fa-user-circle me-1'></i>DB Username: <strong>{$row['username']}</strong></span>
+                                            <span class='badge bg-warning-subtle text-warning-emphasis border border-warning-subtle'><i class='fas fa-key me-1'></i>Pass: <strong>{$row['pass']}</strong></span>
+                                        </div>
+                                        <div class='small text-muted mt-1' style='font-size: 0.85rem;'>
+                                            <span class='me-2'><strong>Father:</strong> " . (!empty($row['father']) ? htmlspecialchars($row['father']) : 'N/A') . "</span>
+                                            <span><strong>Mother:</strong> " . (!empty($row['mother']) ? htmlspecialchars($row['mother']) : 'N/A') . "</span>
+                                        </div>
                                     </td>
                                     <td><small>{$row['bcode']}</small></td>
                                     <td><span class='badge bg-info text-dark'>{$row['course_name']}</span></td>
                                     <td>{$row['date']}</td>
                                     <td>{$status}</td>
                                     <td>
-                                        <a href='{$viewLink}' class='btn btn-sm btn-primary'><i class='fas fa-eye'></i></a>
-                                        <a href='students.php?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
+                                        <a href='{$viewLink}' class='btn btn-sm btn-primary' title='View'><i class='fas fa-eye'></i></a>
+                                        <a href='students.php?delete={$row['id']}' class='btn btn-sm btn-danger' title='Delete' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
                                     </td>
                                   </tr>";
                         }

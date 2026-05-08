@@ -10,10 +10,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_password'])) {
     $current_pass = mysqli_real_escape_string($con, $_POST['current_password']);
     $new_pass = mysqli_real_escape_string($con, $_POST['new_password']);
     $confirm_pass = mysqli_real_escape_string($con, $_POST['confirm_password']);
-    $admin_id = $_SESSION['admin_id'];
+    $coord_id = $_SESSION['coord_id'];
 
     // Verify current password
-    $query = mysqli_query($con, "SELECT pass FROM admin_login WHERE id = $admin_id");
+    $query = mysqli_query($con, "SELECT pass FROM admin_login WHERE id = $coord_id");
     $row = mysqli_fetch_assoc($query);
 
     if ($current_pass !== $row['pass']) {
@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_password'])) {
     } else if (strlen($new_pass) < 6) {
         $error = "Password must be at least 6 characters long.";
     } else {
-        $update = mysqli_query($con, "UPDATE admin_login SET pass = '$new_pass' WHERE id = $admin_id");
+        $update = mysqli_query($con, "UPDATE admin_login SET pass = '$new_pass' WHERE id = $coord_id");
         if ($update) {
             $message = "Password updated successfully!";
         } else {

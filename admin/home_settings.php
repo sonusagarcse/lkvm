@@ -7,6 +7,27 @@ $message = '';
 $error = '';
 $uploadDir = '../images/';
 
+// Run self-healing database check to verify popup columns exist in global_setting table
+$cols_to_check = [
+    'welcome_title' => "VARCHAR(255) DEFAULT 'Welcome to LKVM'",
+    'welcome_desc' => "TEXT",
+    'welcome_image' => "VARCHAR(255) DEFAULT ''",
+    'welcome_btn_text' => "VARCHAR(100) DEFAULT 'Read More'",
+    'welcome_btn_link' => "VARCHAR(255) DEFAULT '/about_us'",
+    'welcome_status' => "TINYINT(1) DEFAULT 1"
+];
+
+foreach ($cols_to_check as $col => $definition) {
+    $check = mysqli_query($con, "SHOW COLUMNS FROM `global_setting` LIKE '$col'");
+    if (mysqli_num_rows($check) == 0) {
+        mysqli_query($con, "ALTER TABLE `global_setting` ADD `$col` $definition");
+    }
+}
+
+// Fetch current settings
+$setQ = mysqli_query($con, "SELECT * FROM global_setting WHERE id = 1");
+$currentSettings = mysqli_fetch_assoc($setQ);
+
 // Handle Delete (for home_sections and testimonials)
 if (isset($_GET['delete_section'])) {
     $id = intval($_GET['delete_section']);
@@ -25,6 +46,56 @@ if (isset($_GET['delete_testimonial'])) {
     if (mysqli_query($con, "DELETE FROM webpage WHERE id = $id AND cid = 10")) {
         $message = "Testimonial deleted successfully!";
         if (function_exists('cache_delete')) { cache_delete('testimonials_10'); }
+    }
+}
+
+// Handle Welcome Pop-up Update
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_popup'])) {
+    $welcome_title = mysqli_real_escape_string($con, $_POST['welcome_title']);
+    $welcome_desc = mysqli_real_escape_string($con, $_POST['welcome_desc']);
+    $welcome_btn_text = mysqli_real_escape_string($con, $_POST['welcome_btn_text']);
+    $welcome_btn_link = mysqli_real_escape_string($con, $_POST['welcome_btn_link']);
+    $welcome_status = isset($_POST['welcome_status']) ? 1 : 0;
+
+    $welcome_image = $currentSettings['welcome_image'] ?? '';
+
+    // Handle Image Upload
+    if (isset($_FILES['welcome_image_file']) && $_FILES['welcome_image_file']['error'] == 0) {
+        $filename = 'popup_' . time() . '_' . $_FILES['welcome_image_file']['name'];
+        if (move_uploaded_file($_FILES['welcome_image_file']['tmp_name'], $uploadDir . $filename)) {
+            // Remove old image if any
+            if ($welcome_image && file_exists($uploadDir . $welcome_image)) {
+                @unlink($uploadDir . $welcome_image);
+            }
+            $welcome_image = $filename;
+        }
+    }
+
+    // Handle Image Removal
+    if (isset($_POST['remove_welcome_image']) && $_POST['remove_welcome_image'] == '1') {
+        if ($welcome_image && file_exists($uploadDir . $welcome_image)) {
+            @unlink($uploadDir . $welcome_image);
+        }
+        $welcome_image = '';
+    }
+
+    $sql = "UPDATE global_setting SET 
+            welcome_title='$welcome_title', 
+            welcome_desc='$welcome_desc', 
+            welcome_btn_text='$welcome_btn_text', 
+            welcome_btn_link='$welcome_btn_link', 
+            welcome_status=$welcome_status,
+            welcome_image='$welcome_image' 
+            WHERE id=1";
+
+    if (mysqli_query($con, $sql)) {
+        $message = "Welcome Pop-up Settings saved successfully!";
+        if (function_exists('cache_delete')) { cache_delete('global_settings'); }
+        // Refresh values
+        $setQ = mysqli_query($con, "SELECT * FROM global_setting WHERE id = 1");
+        $currentSettings = mysqli_fetch_assoc($setQ);
+    } else {
+        $error = "Error updating popup settings: " . mysqli_error($con);
     }
 }
 
@@ -141,10 +212,14 @@ while ($row = mysqli_fetch_assoc($res)) { $testimonials[] = $row; }
 </div>
 
 <?php if ($message) echo '<div class="alert alert-success">' . $message . '</div>'; ?>
+<?php if ($error) echo '<div class="alert alert-danger">' . $error . '</div>'; ?>
 
 <ul class="nav nav-pills mb-4 bg-white p-2 rounded-4 shadow-sm" id="pills-tab" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active rounded-3" id="pills-general-tab" data-bs-toggle="pill" data-bs-target="#pills-general" type="button">General Sections</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link rounded-3" id="pills-popup-tab" data-bs-toggle="pill" data-bs-target="#pills-popup" type="button">Welcome Pop-up</button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link rounded-3" id="pills-kyp-tab" data-bs-toggle="pill" data-bs-target="#pills-kyp" type="button">Welcome to KYP</button>
@@ -193,6 +268,63 @@ while ($row = mysqli_fetch_assoc($res)) { $testimonials[] = $row; }
                 </div>
             </div>
         <?php endforeach; ?>
+    </div>
+
+    <!-- Welcome Pop-up Settings Tab -->
+    <div class="tab-pane fade" id="pills-popup" role="tabpanel">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-4" style="color:#002147;"><i class="fas fa-bullhorn text-warning me-2"></i>Welcome Pop-up Notice Settings</h5>
+                <form method="POST" action="" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Pop-up Title</label>
+                            <input type="text" name="welcome_title" class="form-control" value="<?php echo htmlspecialchars($currentSettings['welcome_title'] ?? 'Welcome to LKVM'); ?>" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Pop-up Status</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="welcome_status" id="welcome_status" style="width: 50px; height: 25px;" <?php echo ($currentSettings['welcome_status'] ?? 1) == 1 ? 'checked' : ''; ?>>
+                                <label class="form-check-label fw-medium ms-2" for="welcome_status">Display Welcome Pop-up Site-wide</label>
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label fw-bold">Message Content</label>
+                            <textarea name="welcome_desc" class="form-control" rows="4" required><?php echo htmlspecialchars($currentSettings['welcome_desc'] ?? ''); ?></textarea>
+                            <div class="form-text">Briefly explain announcements, notices, or welcome greetings to first-time visitors.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Action Button Text</label>
+                            <input type="text" name="welcome_btn_text" class="form-control" value="<?php echo htmlspecialchars($currentSettings['welcome_btn_text'] ?? 'Read More'); ?>">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Action Button Link</label>
+                            <input type="text" name="welcome_btn_link" class="form-control" value="<?php echo htmlspecialchars($currentSettings['welcome_btn_link'] ?? '/about_us'); ?>">
+                            <div class="form-text">Redirect page path e.g. <code>about_us</code> or <code>https://example.com</code></div>
+                        </div>
+                        <div class="col-md-12 mb-4">
+                            <label class="form-label fw-bold">Side Image (Optional)</label>
+                            <div class="p-3 border rounded-3 bg-light d-flex align-items-center gap-3">
+                                <div class="flex-grow-1">
+                                    <input type="file" name="welcome_image_file" class="form-control" accept="image/*">
+                                    <div class="form-text">Adds a modern, professional split side-image layout on desktop screens! Recommended: Portrait orientation.</div>
+                                </div>
+                                <?php if (!empty($currentSettings['welcome_image'])): ?>
+                                    <div class="position-relative text-center">
+                                        <img src="../images/<?php echo $currentSettings['welcome_image']; ?>" style="height: 100px; width: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #ddd;">
+                                        <div class="form-check mt-1">
+                                            <input class="form-check-input" type="checkbox" name="remove_welcome_image" value="1" id="removeImg">
+                                            <label class="form-check-label text-danger small fw-bold" for="removeImg">Remove Image</label>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" name="update_popup" class="btn btn-primary rounded-pill px-4 shadow-sm"><i class="fas fa-save me-2"></i>Save Pop-up Settings</button>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- KYP Tab -->

@@ -1,7 +1,7 @@
 <?php
 session_start();
 // Check if user is already logged in
-if (isset($_SESSION['admin_id']) && $_SESSION['admin_type'] == 2) {
+if (isset($_SESSION['coord_id']) && $_SESSION['coord_type'] == 2) {
     header("Location: index.php");
     exit();
 }
@@ -24,9 +24,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($row['utype'] != 2) {
             $error = "This login is for Coordinators only.";
         } else if ($password == $row['pass']) {
-            $_SESSION['admin_id'] = $row['id'];
-            $_SESSION['admin_name'] = $row['uname'];
-            $_SESSION['admin_type'] = $row['utype'];
+            $_SESSION['coord_id'] = $row['id'];
+            $_SESSION['coord_name'] = $row['uname'];
+            $_SESSION['coord_type'] = $row['utype'];
 
             header("Location: index.php");
             exit();
