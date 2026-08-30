@@ -1,4 +1,13 @@
 <?php
+// Restrict direct access if session is not active
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (!isset($_SESSION['admin_id']) || $_SESSION['admin_type'] != 1) {
+    header("Location: ../login.php");
+    exit();
+}
+
 // Handle actions
 $action = isset($_GET['action']) ? $_GET['action'] : 'list';
 $success_msg = '';
@@ -6,6 +15,10 @@ $error_msg = '';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
+
     if (isset($_POST['add_admit_card']) || isset($_POST['edit_admit_card'])) {
         $rollno = $_POST['rollno'];
         $exam = $_POST['exam'];
@@ -18,14 +31,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Handle image upload
         $img = '';
-        if (isset($_FILES['img']) && $_FILES['img']['size'] > 0) {
+        if (isset($_FILES['img']) && $_FILES['img']['error'] !== UPLOAD_ERR_NO_FILE) {
             $target_dir = "../uploads/admit_cards/";
-            if (!file_exists($target_dir)) {
-                mkdir($target_dir, 0777, true);
+            $allowed_exts = ['jpg', 'jpeg', 'png', 'webp'];
+            $allowed_mimes = ['image/jpeg', 'image/png', 'image/webp'];
+            
+            $upload_result = secure_upload_file($_FILES['img'], $target_dir, $allowed_exts, $allowed_mimes, 2097152); // max 2MB
+            if ($upload_result['success']) {
+                $img = $upload_result['filename'];
+            } else {
+                $error_msg = "Image upload failed: " . $upload_result['error'];
             }
-            $ext = pathinfo($_FILES['img']['name'], PATHINFO_EXTENSION);
-            $img = time() . '_' . uniqid() . '.' . $ext;
-            move_uploaded_file($_FILES['img']['tmp_name'], $target_dir . $img);
         }
 
         if (isset($_POST['add_admit_card'])) {

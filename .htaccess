@@ -1,5 +1,8 @@
 RewriteEngine On
 
+# Prevent Directory Listing
+Options -Indexes
+
 # Ensure HTTPS
 # RewriteCond %{HTTPS} off
 # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
@@ -9,6 +12,11 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteRule ^([^\.]+)$ $1.php [NC,L]
 
+# Remove trailing slash (canonicalization & security)
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} (.+)/$
+RewriteRule ^ %1 [R=301,L]
+
 # Dynamic Page Routing
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -16,20 +24,24 @@ RewriteCond %{REQUEST_FILENAME}.php !-f
 RewriteRule ^([a-zA-Z0-9-]+)/?$ page.php?slug=$1 [QSA,L]
 
 # Handle 404 errors
-ErrorDocument 404 /404.php
+ErrorDocument 404 /lkvm/404.php
 
-# Enable CORS
-<IfModule mod_headers.c>
-    Header set Access-Control-Allow-Origin "*"
-</IfModule>
+# Protect sensitive system files and folders
+RewriteCond %{REQUEST_URI} \.(env|git|gitignore|sql|zip|tar|gz|log|bak|old|tmp|yml|yaml)$ [NC]
+RewriteRule ^ - [F]
 
-# Prevent directory listing
-Options -Indexes
+RewriteCond %{REQUEST_URI} (SQL\sFiles|quarantine|cache) [NC]
+RewriteRule ^ - [F]
 
 # Protect .htaccess file
-<Files .htaccess>
-    Order allow,deny
-    Deny from all
+<Files ".htaccess">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </Files>
 
 # Cache control for static files

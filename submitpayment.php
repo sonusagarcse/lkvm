@@ -1,49 +1,51 @@
 <?php
-header('Access-Control-Allow-Origin:*');
-header('Access-Control-Allow-Methods:POST,GET,PUT,PATCH,DELETE');
+require_once 'connection.php';
+
+// Restrict Access-Control-Allow-Origin to safe/specific origins or dynamically handle (keeping strict security)
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$allowed_origins = [rtrim($SITE_URL, '/')];
+if (in_array(rtrim($origin, '/'), $allowed_origins)) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+} else {
+    header('Access-Control-Allow-Origin: ' . rtrim($SITE_URL, '/'));
+}
+header('Access-Control-Allow-Methods: POST, GET');
 header("Content-Type: application/json");
 header("Accept: application/json");
-header('Access-Control-Allow-Headers:Access-Control-Allow-Origin,Access-Control-Allow-Methods,Content-Type');
+header('Access-Control-Allow-Headers: Content-Type');
 
-if (isset($_POST['action']) && $_POST['action'] = 'payOrder') {
+if (isset($_POST['action']) && $_POST['action'] === 'payOrder') {
 
-  $razorpay_mode = 'live';
+  $razorpay_key = $RAZORPAY_KEY_ID;
+  $razorpay_secret = $RAZORPAY_KEY_SECRET;
 
-  $razorpay_test_key = 'your_test_key'; //Your Test Key
-  $razorpay_test_secret_key = 'your_test_secret_key'; //Your Test Secret Key
-
-  $razorpay_live_key = 'rzp_live_ymOhx2YTnlqsrg';
-  $razorpay_live_secret_key = 'xy2pXKH0WQZojMQTqMe9ndac';
-
-  if ($razorpay_mode == 'test') {
-
-    $razorpay_key = $razorpay_test_key;
-
-    $authAPIkey = "Basic " . base64_encode($razorpay_test_key . ":" . $razorpay_test_secret_key);
-
-  } else {
-
-    $authAPIkey = "Basic " . base64_encode($razorpay_live_key . ":" . $razorpay_live_secret_key);
-    $razorpay_key = $razorpay_live_key;
-
+  if (empty($razorpay_key) || empty($razorpay_secret)) {
+      echo json_encode(['res' => 'error', 'info' => 'Payment gateway not configured correctly.']);
+      exit;
   }
+
+  $authAPIkey = "Basic " . base64_encode($razorpay_key . ":" . $razorpay_secret);
 
   // Set transaction details
   $order_id = uniqid();
 
-  $billing_name = $_POST['billing_name'];
-  $billing_mobile = $_POST['billing_mobile'];
-  $billing_email = $_POST['billing_email'];
-  $shipping_name = $_POST['shipping_name'];
-  $shipping_mobile = $_POST['shipping_mobile'];
-  $shipping_email = $_POST['shipping_email'];
-  $paymentOption = $_POST['paymentOption'];
-  $payAmount = $_POST['payAmount'];
+  $billing_name = filter_var($_POST['billing_name'] ?? '', FILTER_DEFAULT);
+  $billing_mobile = filter_var($_POST['billing_mobile'] ?? '', FILTER_DEFAULT);
+  $billing_email = filter_var($_POST['billing_email'] ?? '', FILTER_VALIDATE_EMAIL);
+  $shipping_name = filter_var($_POST['shipping_name'] ?? '', FILTER_DEFAULT);
+  $shipping_mobile = filter_var($_POST['shipping_mobile'] ?? '', FILTER_DEFAULT);
+  $shipping_email = filter_var($_POST['shipping_email'] ?? '', FILTER_VALIDATE_EMAIL);
+  $payAmount = floatval($_POST['payAmount'] ?? 0);
+
+  if ($payAmount <= 0) {
+      echo json_encode(['res' => 'error', 'info' => 'Invalid payment amount.']);
+      exit;
+  }
 
   $note = "Payment of amount Rs. " . $payAmount;
 
   $postdata = array(
-    "amount" => $payAmount * 100,
+    "amount" => intval($payAmount * 100),
     "currency" => "INR",
     "receipt" => $note,
     "notes" => array(
@@ -58,7 +60,7 @@ if (isset($_POST['action']) && $_POST['action'] = 'payOrder') {
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_ENCODING => '',
     CURLOPT_MAXREDIRS => 10,
-    CURLOPT_TIMEOUT => 0,
+    CURLOPT_TIMEOUT => 30,
     CURLOPT_FOLLOWLOCATION => true,
     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
     CURLOPT_CUSTOMREQUEST => 'POST',
@@ -70,6 +72,13 @@ if (isset($_POST['action']) && $_POST['action'] = 'payOrder') {
   ));
 
   $response = curl_exec($curl);
+
+  if (curl_errno($curl)) {
+      security_log('PAYMENT_ERROR', 'Curl error in order creation: ' . curl_error($curl));
+      echo json_encode(['res' => 'error', 'info' => 'Unable to contact payment provider.']);
+      curl_close($curl);
+      exit;
+  }
 
   curl_close($curl);
   $orderRes = json_decode($response);
@@ -89,11 +98,12 @@ if (isset($_POST['action']) && $_POST['action'] = 'payOrder') {
     echo json_encode(['res' => 'success', 'order_number' => $order_id, 'userData' => $dataArr, 'razorpay_key' => $razorpay_key]);
     exit;
   } else {
-    echo json_encode(['res' => 'error', 'order_id' => $order_id, 'info' => 'Error with payment']);
+    security_log('PAYMENT_ERROR', 'Razorpay Order response missing ID: ' . $response);
+    echo json_encode(['res' => 'error', 'order_id' => $order_id, 'info' => 'Error with payment provider integration']);
     exit;
   }
 } else {
-  echo json_encode(['res' => 'error']);
+  echo json_encode(['res' => 'error', 'info' => 'Invalid action.']);
   exit;
 }
 ?>

@@ -1,0 +1,272 @@
+:root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary: #06b6d4;
+    --dark: #0f172a;
+    --light: #f8fafc;
+    --text: #334155;
+    --border: #e2e8f0;
+    --white: #ffffff;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text);
+    background-color: var(--light);
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Navbar */
+.lms-navbar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #e2e8f0;
+    transition: 0.3s;
+    z-index: 1100; /* Higher than sidebar card */
+}
+
+.lms-logo {
+    height: 40px;
+    object-fit: contain;
+}
+
+.nav-link {
+    font-weight: 500;
+    color: var(--dark);
+    padding: 10px 20px !important;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    color: var(--primary);
+}
+
+.btn-login {
+    font-weight: 600;
+    color: var(--dark);
+    padding: 8px 24px;
+}
+
+.btn-signup {
+    background: var(--primary);
+    color: var(--white);
+    font-weight: 600;
+    padding: 8px 24px;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.btn-signup:hover {
+    background: var(--primary-dark);
+    color: var(--white);
+    transform: translateY(-2px);
+}
+
+/* Hero Section */
+.hero-banner {
+    padding: 100px 0;
+    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+    text-align: center;
+}
+
+.hero-banner h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--dark);
+    margin-bottom: 20px;
+}
+
+/* Course Cards */
+.lms-card {
+    background: var(--white);
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    height: 100%;
+}
+
+.lms-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    border-color: var(--primary);
+}
+
+.lms-card-img {
+    height: 200px;
+    overflow: hidden;
+    position: relative;
+}
+
+.lms-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.lms-card:hover .lms-card-img img {
+    transform: scale(1.1);
+}
+
+.lms-badge {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: var(--white);
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.lms-card-body {
+    padding: 25px;
+}
+
+.lms-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--dark);
+    line-height: 1.4;
+}
+
+.lms-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 20px;
+}
+
+.lms-meta i {
+    color: var(--primary);
+    margin-right: 5px;
+}
+
+.lms-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+}
+
+.lms-price {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--dark);
+}
+
+.btn-view {
+    background: var(--light);
+    color: var(--primary);
+    font-weight: 700;
+    padding: 8px 20px;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.btn-view:hover {
+    background: var(--primary);
+    color: var(--white);
+}
+
+/* Footer */
+.lms-footer {
+    background: var(--white);
+    border-top: 1px solid var(--border);
+}
+
+.footer-links li {
+    margin-bottom: 12px;
+}
+
+.footer-links a {
+    color: #64748b;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.footer-links a:hover {
+    color: var(--primary);
+}
+
+.social-links a {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--light);
+    color: var(--dark);
+    border-radius: 12px;
+    margin-right: 10px;
+    transition: 0.3s;
+}
+
+.fw-800 { font-weight: 800; }
+.h-fit { height: fit-content; }
+.shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+
+/* Stats Card */
+.stat-card {
+    transition: transform 0.3s ease;
+    border: 1px solid var(--border);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Feature Box */
+.feature-box {
+    padding: 10px;
+    transition: 0.3s;
+}
+
+.feature-box:hover {
+    transform: translateX(10px);
+}
+
+/* Testimonial Card */
+.testimonial-card {
+    transition: all 0.3s ease;
+}
+
+.testimonial-card:hover {
+    background: var(--white) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    transform: translateY(-5px);
+}
+
+/* Category Item Hover */
+.category-item {
+    background: var(--white);
+    transition: all 0.3s ease;
+}
+
+.category-item:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.category-item:hover h6 {
+    color: var(--white) !important;
+}
+
+.category-item:hover .icon-circle {
+    background: rgba(255,255,255,0.2) !important;
+}
+
+.category-item:hover .icon-circle i {
+    color: var(--white) !important;
+}

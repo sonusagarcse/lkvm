@@ -7,28 +7,56 @@ $message = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_password'])) {
-    $current_pass = mysqli_real_escape_string($con, $_POST['current_password']);
-    $new_pass = mysqli_real_escape_string($con, $_POST['new_password']);
-    $confirm_pass = mysqli_real_escape_string($con, $_POST['confirm_password']);
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
+    
+    $current_pass = $_POST['current_password'] ?? '';
+    $new_pass = $_POST['new_password'] ?? '';
+    $confirm_pass = $_POST['confirm_password'] ?? '';
     $coord_id = $_SESSION['coord_id'];
 
-    // Verify current password
-    $query = mysqli_query($con, "SELECT pass FROM admin_login WHERE id = $coord_id");
-    $row = mysqli_fetch_assoc($query);
+    // Verify current password with prepared statement
+    $stmt = $con->prepare("SELECT pass FROM admin_login WHERE id = ? LIMIT 1");
+    if ($stmt) {
+        $stmt->bind_param("i", $coord_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($row = $res->fetch_assoc()) {
+            $is_valid = false;
+            // Verify against password_hash or legacy plaintext password
+            if (password_verify($current_pass, $row['pass'])) {
+                $is_valid = true;
+            } elseif ($current_pass === $row['pass']) {
+                $is_valid = true;
+            }
 
-    if ($current_pass !== $row['pass']) {
-        $error = "Current password is incorrect.";
-    } else if ($new_pass !== $confirm_pass) {
-        $error = "New password and confirmation do not match.";
-    } else if (strlen($new_pass) < 6) {
-        $error = "Password must be at least 6 characters long.";
-    } else {
-        $update = mysqli_query($con, "UPDATE admin_login SET pass = '$new_pass' WHERE id = $coord_id");
-        if ($update) {
-            $message = "Password updated successfully!";
+            if (!$is_valid) {
+                $error = "Current password is incorrect.";
+            } else if ($new_pass !== $confirm_pass) {
+                $error = "New password and confirmation do not match.";
+            } else if (strlen($new_pass) < 6) {
+                $error = "Password must be at least 6 characters long.";
+            } else {
+                $hashed_pass = password_hash($new_pass, PASSWORD_DEFAULT);
+                $update_stmt = $con->prepare("UPDATE admin_login SET pass = ? WHERE id = ?");
+                if ($update_stmt) {
+                    $update_stmt->bind_param("si", $hashed_pass, $coord_id);
+                    if ($update_stmt->execute()) {
+                        $message = "Password updated successfully!";
+                        security_log('COORD_PASSWORD_CHANGED', "Coordinator User ID: $coord_id successfully changed password");
+                    } else {
+                        $error = "Error updating password.";
+                    }
+                    $update_stmt->close();
+                }
+            }
         } else {
-            $error = "Error updating password: " . mysqli_error($con);
+            $error = "User not found.";
         }
+        $stmt->close();
+    } else {
+        $error = "Database Error.";
     }
 }
 ?>

@@ -7,6 +7,10 @@ $success = '';
 $error = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
+    
     // Collect and sanitize POST variables
     $bid = isset($_POST['bid']) ? intval($_POST['bid']) : 0;
     $name = mysqli_real_escape_string($con, $_POST['name']);
@@ -30,18 +34,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $address = mysqli_real_escape_string($con, $_POST['address']);
     $status = isset($_POST['status']) ? intval($_POST['status']) : 1;
 
-    // Handle Image Upload
+    // Handle Image Upload securely
     $img_name = '';
-    if (isset($_FILES['img']) && $_FILES['img']['error'] == 0) {
-        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        $filename = $_FILES['img']['name'];
-        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-        if (in_array($ext, $allowed)) {
-            $img_name = time() . '_' . rand(1000, 9999) . '.' . $ext;
-            $upload_path = '../images/' . $img_name;
-            if (!move_uploaded_file($_FILES['img']['tmp_name'], $upload_path)) {
-                $img_name = '';
-            }
+    if (isset($_FILES['img']) && $_FILES['img']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        
+        $upload_result = secure_upload_file($_FILES['img'], '../images/', $allowed_exts, $allowed_mimes, 2097152); // max 2MB
+        if ($upload_result['success']) {
+            $img_name = $upload_result['filename'];
+        } else {
+            $error = "Image upload failed: " . $upload_result['error'];
         }
     }
 

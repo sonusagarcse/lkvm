@@ -26,48 +26,71 @@ if (!isset($settings['salary_divisor'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
+
     if (isset($_POST['update_rules'])) {
         $full = floatval($_POST['full_day_hours']);
         $half = floatval($_POST['half_day_hours']);
         $divisor = intval($_POST['salary_divisor']);
         $template_type = mysqli_real_escape_string($con, $_POST['slip_template_type']);
         
-        $update = mysqli_query($con, "UPDATE emp_settings SET full_day_hours='$full', half_day_hours='$half', salary_divisor='$divisor', slip_template_type='$template_type' WHERE id=" . $settings['id']);
-        if ($update) {
-            $message = "Settings updated successfully.";
-            $messageType = "success";
-            $settings['full_day_hours'] = $full;
-            $settings['half_day_hours'] = $half;
-            $settings['salary_divisor'] = $divisor;
-            $settings['slip_template_type'] = $template_type;
-        } else {
-            $message = "Error updating settings.";
-            $messageType = "danger";
+        $stmt = $con->prepare("UPDATE emp_settings SET full_day_hours=?, half_day_hours=?, salary_divisor=?, slip_template_type=? WHERE id=?");
+        if ($stmt) {
+            $stmt->bind_param("ddisi", $full, $half, $divisor, $template_type, $settings['id']);
+            if ($stmt->execute()) {
+                $message = "Settings updated successfully.";
+                $messageType = "success";
+                $settings['full_day_hours'] = $full;
+                $settings['half_day_hours'] = $half;
+                $settings['salary_divisor'] = $divisor;
+                $settings['slip_template_type'] = $template_type;
+            } else {
+                $message = "Error updating settings.";
+                $messageType = "danger";
+            }
+            $stmt->close();
         }
     }
 
     if (isset($_POST['upload_bg'])) {
-        if (isset($_FILES['slip_bg']['name']) && $_FILES['slip_bg']['name'] != '') {
-            $filename = time() . '_' . basename($_FILES['slip_bg']['name']);
-            $target = "../images/" . $filename;
-            if (move_uploaded_file($_FILES['slip_bg']['tmp_name'], $target)) {
-                $update = mysqli_query($con, "UPDATE emp_settings SET slip_bg_image='$filename' WHERE id=" . $settings['id']);
-                if ($update) {
-                    $message = "Background image uploaded.";
-                    $messageType = "success";
-                    $settings['slip_bg_image'] = $filename;
+        if (isset($_FILES['slip_bg']) && $_FILES['slip_bg']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $target_dir = "../images/";
+            $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            $allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            
+            $upload_result = secure_upload_file($_FILES['slip_bg'], $target_dir, $allowed_exts, $allowed_mimes, 3145728); // max 3MB
+            if ($upload_result['success']) {
+                $filename = $upload_result['filename'];
+                $stmt = $con->prepare("UPDATE emp_settings SET slip_bg_image=? WHERE id=?");
+                if ($stmt) {
+                    $stmt->bind_param("si", $filename, $settings['id']);
+                    if ($stmt->execute()) {
+                        $message = "Background image uploaded.";
+                        $messageType = "success";
+                        $settings['slip_bg_image'] = $filename;
+                    }
+                    $stmt->close();
                 }
+            } else {
+                $message = "Background upload failed: " . $upload_result['error'];
+                $messageType = "danger";
             }
         }
     }
 
     if (isset($_POST['save_positions'])) {
         $positions = mysqli_real_escape_string($con, $_POST['positions_json']);
-        $update = mysqli_query($con, "UPDATE emp_settings SET slip_text_positions='$positions' WHERE id=" . $settings['id']);
-        if ($update) {
-            $message = "Template text positions saved.";
-            $messageType = "success";
-            $settings['slip_text_positions'] = stripslashes($positions);
+        $stmt = $con->prepare("UPDATE emp_settings SET slip_text_positions=? WHERE id=?");
+        if ($stmt) {
+            $stmt->bind_param("si", $positions, $settings['id']);
+            if ($stmt->execute()) {
+                $message = "Template text positions saved.";
+                $messageType = "success";
+                $settings['slip_text_positions'] = stripslashes($positions);
+            }
+            $stmt->close();
         }
     }
 

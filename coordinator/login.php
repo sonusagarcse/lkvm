@@ -12,29 +12,69 @@ require_once '../connection.php';
 $error = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = mysqli_real_escape_string($con, $_POST['email']);
-    $password = mysqli_real_escape_string($con, $_POST['password']);
+    // CSRF Check
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
 
-    // Check in admin_login table for Coordinators (utype 2)
-    $query = "SELECT * FROM admin_login WHERE email = '$email' AND status = 1";
-    $result = mysqli_query($con, $query);
-
-    if (mysqli_num_rows($result) > 0) {
-        $row = mysqli_fetch_assoc($result);
-        if ($row['utype'] != 2) {
-            $error = "This login is for Coordinators only.";
-        } else if ($password == $row['pass']) {
-            $_SESSION['coord_id'] = $row['id'];
-            $_SESSION['coord_name'] = $row['uname'];
-            $_SESSION['coord_type'] = $row['utype'];
-
-            header("Location: index.php");
-            exit();
-        } else {
-            $error = "Invalid Password";
-        }
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    
+    // Rate Limiting
+    if (!check_rate_limit('coord_login_' . $_SERVER['REMOTE_ADDR'] . '_' . md5($email), 5, 900)) {
+        $error = "Too many failed attempts. Please try again after 15 minutes.";
     } else {
-        $error = "Invalid Email or Account Disabled";
+        $stmt = $con->prepare("SELECT * FROM admin_login WHERE email = ? AND status = 1 LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                
+                if ($row['utype'] != 2) {
+                    $error = "This login is for Coordinators only.";
+                } else {
+                    $is_valid = false;
+                    
+                    // Support backward compatibility for plaintext and hash migration
+                    if (password_verify($password, $row['pass'])) {
+                        $is_valid = true;
+                    } elseif ($password === $row['pass']) {
+                        // Plaintext matches, migrate to hashed password
+                        $is_valid = true;
+                        $new_hash = password_hash($password, PASSWORD_DEFAULT);
+                        $update_stmt = $con->prepare("UPDATE admin_login SET pass = ? WHERE id = ?");
+                        if ($update_stmt) {
+                            $update_stmt->bind_param("si", $new_hash, $row['id']);
+                            $update_stmt->execute();
+                            $update_stmt->close();
+                        }
+                    }
+                    
+                    if ($is_valid) {
+                        session_regenerate_id(true);
+                        $_SESSION['coord_id'] = $row['id'];
+                        $_SESSION['coord_name'] = $row['uname'];
+                        $_SESSION['coord_type'] = $row['utype'];
+                        
+                        security_log('COORD_LOGIN_SUCCESS', "Coordinator User ID: {$row['id']} logged in successfully");
+                        header("Location: index.php");
+                        exit();
+                    } else {
+                        $error = "Invalid Password";
+                        security_log('COORD_LOGIN_FAILED', "Failed login attempt for email: $email");
+                    }
+                }
+            } else {
+                $error = "Invalid Email or Account Disabled";
+                security_log('COORD_LOGIN_FAILED', "Failed login attempt: non-existent email: $email");
+            }
+            $stmt->close();
+        } else {
+            $error = "Database Error.";
+        }
     }
 }
 ?>

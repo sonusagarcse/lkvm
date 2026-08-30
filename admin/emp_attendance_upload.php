@@ -19,7 +19,18 @@ $logs_inserted = 0;
 $days_processed = 0;
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['attendance_file'])) {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
+    
     $file = $_FILES['attendance_file']['tmp_name'];
+    $file_name = $_FILES['attendance_file']['name'];
+    $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+    
+    // Restrict to plain text files (.txt / .log)
+    if (!in_array($ext, ['txt', 'log', 'csv'])) {
+        die("Invalid file format. Only .txt, .log, and .csv files are allowed.");
+    }
     
     if ($file) {
         $content = file_get_contents($file);

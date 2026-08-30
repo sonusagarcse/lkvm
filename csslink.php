@@ -1,9 +1,10 @@
-<?php require("connection.php"); ?> 
+<?php require_once __DIR__ . "/connection.php"; ?> 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="profile" href="https://gmpg.org/xfn/11"/>
 
 <!-- Dynamic SEO Tags -->
+<base href="<?php echo $SITE_URL; ?>/">
 <title><?php echo(isset($page_title) ? htmlspecialchars($page_title) . " | " : "") . htmlspecialchars($SITE_NAME); ?></title>
 <meta name="description" content="<?php echo htmlspecialchars($settings['meta_description'] ?? ($SITE_NAME . ' provides classes for computer education and vocational training.')); ?>">
 <meta name="keywords" content="<?php echo htmlspecialchars($settings['meta_keywords'] ?? 'computer classes, vocational training, KYP, coding center'); ?>">
@@ -16,12 +17,13 @@
 <meta property="og:description" content="<?php echo htmlspecialchars($settings['meta_description'] ?? ''); ?>">
 <meta property="og:image" content="<?php echo !empty($settings['og_image']) ? $settings['og_image'] : $SITE_URL . '/images/logo.png'; ?>">
 
-<!-- Twitter -->
-<meta property="twitter:card" content="summary_large_image">
-<meta property="twitter:url" content="<?php echo $SITE_URL; ?>">
-<meta property="twitter:title" content="<?php echo(isset($page_title) ? htmlspecialchars($page_title) . " | " : "") . htmlspecialchars($SITE_NAME); ?>">
-<meta property="twitter:description" content="<?php echo htmlspecialchars($settings['meta_description'] ?? ''); ?>">
-<meta property="twitter:image" content="<?php echo !empty($settings['og_image']) ? $settings['og_image'] : $SITE_URL . '/images/logo.png'; ?>">
+<!-- PWA & Mobile Meta Tags -->
+<link rel="manifest" href="<?php echo $SITE_URL; ?>/pwa/manifest.json">
+<meta name="theme-color" content="#002147">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LKVM">
+<link rel="apple-touch-icon" href="images/pwa-icon-512.png">
 
 <!-- Core Scripts & Styles -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

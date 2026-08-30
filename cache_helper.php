@@ -25,8 +25,8 @@ function cache_get($key)
         return null;
     }
 
-    $cache_data = @unserialize($cache_data);
-    if ($cache_data === false) {
+    $cache_data = @json_decode($cache_data, true);
+    if ($cache_data === null || $cache_data === false) {
         return null;
     }
 
@@ -60,7 +60,7 @@ function cache_set($key, $data, $ttl = 3600)
         'data' => $data
     );
 
-    $result = @file_put_contents($cache_file, serialize($cache_data), LOCK_EX);
+    $result = @file_put_contents($cache_file, json_encode($cache_data), LOCK_EX);
     return $result !== false;
 }
 

@@ -51,6 +51,9 @@ if (isset($_GET['delete_testimonial'])) {
 
 // Handle Welcome Pop-up Update
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_popup'])) {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
     $welcome_title = mysqli_real_escape_string($con, $_POST['welcome_title']);
     $welcome_desc = mysqli_real_escape_string($con, $_POST['welcome_desc']);
     $welcome_btn_text = mysqli_real_escape_string($con, $_POST['welcome_btn_text']);
@@ -60,14 +63,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_popup'])) {
     $welcome_image = $currentSettings['welcome_image'] ?? '';
 
     // Handle Image Upload
-    if (isset($_FILES['welcome_image_file']) && $_FILES['welcome_image_file']['error'] == 0) {
-        $filename = 'popup_' . time() . '_' . $_FILES['welcome_image_file']['name'];
-        if (move_uploaded_file($_FILES['welcome_image_file']['tmp_name'], $uploadDir . $filename)) {
-            // Remove old image if any
+    if (isset($_FILES['welcome_image_file']) && $_FILES['welcome_image_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $upload_result = secure_upload_file($_FILES['welcome_image_file'], $uploadDir, $allowed_exts, $allowed_mimes, 2097152);
+        
+        if ($upload_result['success']) {
             if ($welcome_image && file_exists($uploadDir . $welcome_image)) {
                 @unlink($uploadDir . $welcome_image);
             }
-            $welcome_image = $filename;
+            $welcome_image = $upload_result['filename'];
+        } else {
+            die("Upload failed: " . e($upload_result['error']));
         }
     }
 
@@ -79,54 +86,73 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_popup'])) {
         $welcome_image = '';
     }
 
-    $sql = "UPDATE global_setting SET 
-            welcome_title='$welcome_title', 
-            welcome_desc='$welcome_desc', 
-            welcome_btn_text='$welcome_btn_text', 
-            welcome_btn_link='$welcome_btn_link', 
-            welcome_status=$welcome_status,
-            welcome_image='$welcome_image' 
-            WHERE id=1";
-
-    if (mysqli_query($con, $sql)) {
-        $message = "Welcome Pop-up Settings saved successfully!";
-        if (function_exists('cache_delete')) { cache_delete('global_settings'); }
-        // Refresh values
-        $setQ = mysqli_query($con, "SELECT * FROM global_setting WHERE id = 1");
-        $currentSettings = mysqli_fetch_assoc($setQ);
-    } else {
-        $error = "Error updating popup settings: " . mysqli_error($con);
+    $stmt = $con->prepare("UPDATE global_setting SET welcome_title=?, welcome_desc=?, welcome_btn_text=?, welcome_btn_link=?, welcome_status=?, welcome_image=? WHERE id=1");
+    if ($stmt) {
+        $stmt->bind_param("ssssis", $welcome_title, $welcome_desc, $welcome_btn_text, $welcome_btn_link, $welcome_status, $welcome_image);
+        if ($stmt->execute()) {
+            $message = "Welcome Pop-up Settings saved successfully!";
+            if (function_exists('cache_delete')) { cache_delete('global_settings'); }
+            // Refresh values
+            $setQ = mysqli_query($con, "SELECT * FROM global_setting WHERE id = 1");
+            $currentSettings = mysqli_fetch_assoc($setQ);
+        } else {
+            $error = "Error updating popup settings.";
+        }
+        $stmt->close();
     }
 }
 
 // Handle KYP Update
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_kyp'])) {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
     $kyp_id = 12;
     $name = mysqli_real_escape_string($con, $_POST['kyp_title']);
     $des = mysqli_real_escape_string($con, $_POST['kyp_des']);
     $vdo = mysqli_real_escape_string($con, $_POST['kyp_link']);
     
     // Fetch current img
-    $res = mysqli_query($con, "SELECT img FROM webpage WHERE id = $kyp_id");
-    $row = mysqli_fetch_assoc($res);
-    $img = $row['img'];
+    $stmt = $con->prepare("SELECT img FROM webpage WHERE id = ? LIMIT 1");
+    $img = '';
+    if ($stmt) {
+        $stmt->bind_param("i", $kyp_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($row = $res->fetch_assoc()) {
+            $img = $row['img'];
+        }
+        $stmt->close();
+    }
 
-    if (isset($_FILES['kyp_img']) && $_FILES['kyp_img']['error'] == 0) {
-        $filename = 'kyp_bg_' . time() . '_' . $_FILES['kyp_img']['name'];
-        if (move_uploaded_file($_FILES['kyp_img']['tmp_name'], $uploadDir . $filename)) {
-            $img = $filename;
+    if (isset($_FILES['kyp_img']) && $_FILES['kyp_img']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $upload_result = secure_upload_file($_FILES['kyp_img'], $uploadDir, $allowed_exts, $allowed_mimes, 2097152);
+        
+        if ($upload_result['success']) {
+            $img = $upload_result['filename'];
+        } else {
+            die("Upload failed: " . e($upload_result['error']));
         }
     }
 
-    $sql = "UPDATE webpage SET name='$name', des='$des', vdo='$vdo', img='$img' WHERE id=$kyp_id";
-    if (mysqli_query($con, $sql)) {
-        $message = "KYP Section updated!";
-        if (function_exists('cache_delete')) { cache_delete('webpage_12'); }
+    $stmt = $con->prepare("UPDATE webpage SET name=?, des=?, vdo=?, img=? WHERE id=?");
+    if ($stmt) {
+        $stmt->bind_param("ssssi", $name, $des, $vdo, $img, $kyp_id);
+        if ($stmt->execute()) {
+            $message = "KYP Section updated!";
+            if (function_exists('cache_delete')) { cache_delete('webpage_12'); }
+        }
+        $stmt->close();
     }
 }
 
 // Handle Testimonial Add/Update
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_testimonial'])) {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
     $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
     $name = mysqli_real_escape_string($con, $_POST['name']);
     $title = mysqli_real_escape_string($con, $_POST['title']);
@@ -135,32 +161,58 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_testimonial'])) {
     $status = 1;
     $date = date('d-m-Y');
 
-    // Handle testimonial image
-    $res = mysqli_query($con, "SELECT img FROM webpage WHERE id = $id");
-    $row = mysqli_fetch_assoc($res);
-    $img = $row ? $row['img'] : '';
+    // Fetch current testimonial image
+    $img = '';
+    if ($id > 0) {
+        $stmt = $con->prepare("SELECT img FROM webpage WHERE id = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($row = $res->fetch_assoc()) {
+                $img = $row['img'];
+            }
+            $stmt->close();
+        }
+    }
 
-    if (isset($_FILES['t_img']) && $_FILES['t_img']['error'] == 0) {
-        $filename = 't_' . time() . '_' . $_FILES['t_img']['name'];
-        if (move_uploaded_file($_FILES['t_img']['tmp_name'], $uploadDir . $filename)) {
-            $img = $filename;
+    if (isset($_FILES['t_img']) && $_FILES['t_img']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $upload_result = secure_upload_file($_FILES['t_img'], $uploadDir, $allowed_exts, $allowed_mimes, 2097152);
+        
+        if ($upload_result['success']) {
+            $img = $upload_result['filename'];
+        } else {
+            die("Upload failed: " . e($upload_result['error']));
         }
     }
 
     if ($id > 0) {
-        $sql = "UPDATE webpage SET name='$name', title='$title', des='$des', img='$img' WHERE id=$id AND cid=10";
+        $stmt = $con->prepare("UPDATE webpage SET name=?, title=?, des=?, img=? WHERE id=? AND cid=10");
+        if ($stmt) {
+            $stmt->bind_param("ssssi", $name, $title, $des, $img, $id);
+            $stmt->execute();
+            $stmt->close();
+        }
     } else {
-        $sql = "INSERT INTO webpage (name, title, des, img, cid, status, date) VALUES ('$name', '$title', '$des', '$img', $cid, $status, '$date')";
+        $stmt = $con->prepare("INSERT INTO webpage (name, title, des, img, cid, status, date) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        if ($stmt) {
+            $stmt->bind_param("ssssiis", $name, $title, $des, $img, $cid, $status, $date);
+            $stmt->execute();
+            $stmt->close();
+        }
     }
 
-    if (mysqli_query($con, $sql)) {
-        $message = "Testimonial saved!";
-        if (function_exists('cache_delete')) { cache_delete('testimonials_10'); }
-    }
+    $message = "Testimonial saved!";
+    if (function_exists('cache_delete')) { cache_delete('testimonials_10'); }
 }
 
 // Handle Home Section Add/Update (Phase 2 logic)
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_item'])) {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
     $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
     $section_type = mysqli_real_escape_string($con, $_POST['section_type']);
     $title = mysqli_real_escape_string($con, $_POST['title']);
@@ -170,26 +222,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_item'])) {
     $sort_order = intval($_POST['sort_order']);
     $date = date('d-m-Y');
 
-    if (isset($_FILES['icon_file']) && $_FILES['icon_file']['error'] == 0) {
-        $filename = 'icon_' . time() . '_' . $_FILES['icon_file']['name'];
-        if (move_uploaded_file($_FILES['icon_file']['tmp_name'], $uploadDir . $filename)) {
-            $icon = $filename;
+    if (isset($_FILES['icon_file']) && $_FILES['icon_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $upload_result = secure_upload_file($_FILES['icon_file'], $uploadDir, $allowed_exts, $allowed_mimes, 2097152);
+        
+        if ($upload_result['success']) {
+            $icon = $upload_result['filename'];
+        } else {
+            die("Upload failed: " . e($upload_result['error']));
         }
     }
 
     if ($id > 0) {
-        $query = "UPDATE home_sections SET section_type='$section_type', title='$title', icon='$icon', link='$link', value='$value', sort_order=$sort_order WHERE id=$id";
+        $stmt = $con->prepare("UPDATE home_sections SET section_type=?, title=?, icon=?, link=?, value=?, sort_order=? WHERE id=?");
+        if ($stmt) {
+            $stmt->bind_param("sssssii", $section_type, $title, $icon, $link, $value, $sort_order, $id);
+            $stmt->execute();
+            $stmt->close();
+        }
     } else {
-        $query = "INSERT INTO home_sections (section_type, title, icon, link, value, sort_order, date) VALUES ('$section_type', '$title', '$icon', '$link', '$value', $sort_order, '$date')";
+        $stmt = $con->prepare("INSERT INTO home_sections (section_type, title, icon, link, value, sort_order, date) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        if ($stmt) {
+            $stmt->bind_param("sssssis", $section_type, $title, $icon, $link, $value, $sort_order, $date);
+            $stmt->execute();
+            $stmt->close();
+        }
     }
 
-    if (mysqli_query($con, $query)) {
-        $message = "Section item saved!";
-        if (function_exists('cache_delete')) { 
-            cache_delete('home_top_features');
-            cache_delete('home_website_links');
-            cache_delete('home_counters');
-        }
+    $message = "Section item saved!";
+    if (function_exists('cache_delete')) { 
+        cache_delete('home_top_features');
+        cache_delete('home_website_links');
+        cache_delete('home_counters');
     }
 }
 
@@ -272,60 +337,144 @@ while ($row = mysqli_fetch_assoc($res)) { $testimonials[] = $row; }
 
     <!-- Welcome Pop-up Settings Tab -->
     <div class="tab-pane fade" id="pills-popup" role="tabpanel">
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-4">
-                <h5 class="fw-bold mb-4" style="color:#002147;"><i class="fas fa-bullhorn text-warning me-2"></i>Welcome Pop-up Notice Settings</h5>
-                <form method="POST" action="" enctype="multipart/form-data">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Pop-up Title</label>
-                            <input type="text" name="welcome_title" class="form-control" value="<?php echo htmlspecialchars($currentSettings['welcome_title'] ?? 'Welcome to LKVM'); ?>" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Pop-up Status</label>
-                            <div class="form-check form-switch mt-2">
-                                <input class="form-check-input" type="checkbox" name="welcome_status" id="welcome_status" style="width: 50px; height: 25px;" <?php echo ($currentSettings['welcome_status'] ?? 1) == 1 ? 'checked' : ''; ?>>
-                                <label class="form-check-label fw-medium ms-2" for="welcome_status">Display Welcome Pop-up Site-wide</label>
-                            </div>
-                        </div>
-                        <div class="col-12 mb-3">
-                            <label class="form-label fw-bold">Message Content</label>
-                            <textarea name="welcome_desc" class="form-control" rows="4" required><?php echo htmlspecialchars($currentSettings['welcome_desc'] ?? ''); ?></textarea>
-                            <div class="form-text">Briefly explain announcements, notices, or welcome greetings to first-time visitors.</div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Action Button Text</label>
-                            <input type="text" name="welcome_btn_text" class="form-control" value="<?php echo htmlspecialchars($currentSettings['welcome_btn_text'] ?? 'Read More'); ?>">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Action Button Link</label>
-                            <input type="text" name="welcome_btn_link" class="form-control" value="<?php echo htmlspecialchars($currentSettings['welcome_btn_link'] ?? '/about_us'); ?>">
-                            <div class="form-text">Redirect page path e.g. <code>about_us</code> or <code>https://example.com</code></div>
-                        </div>
-                        <div class="col-md-12 mb-4">
-                            <label class="form-label fw-bold">Side Image (Optional)</label>
-                            <div class="p-3 border rounded-3 bg-light d-flex align-items-center gap-3">
-                                <div class="flex-grow-1">
-                                    <input type="file" name="welcome_image_file" class="form-control" accept="image/*">
-                                    <div class="form-text">Adds a modern, professional split side-image layout on desktop screens! Recommended: Portrait orientation.</div>
+        <div class="row">
+            <!-- Form Column -->
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-4" style="color:#002147;"><i class="fas fa-bullhorn text-warning me-2"></i>Welcome Pop-up Notice Settings</h5>
+                        <form method="POST" action="" enctype="multipart/form-data">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Pop-up Title</label>
+                                    <input type="text" name="welcome_title" id="input_welcome_title" class="form-control" value="<?php echo htmlspecialchars($currentSettings['welcome_title'] ?? 'Welcome to LKVM'); ?>" required>
                                 </div>
-                                <?php if (!empty($currentSettings['welcome_image'])): ?>
-                                    <div class="position-relative text-center">
-                                        <img src="../images/<?php echo $currentSettings['welcome_image']; ?>" style="height: 100px; width: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #ddd;">
-                                        <div class="form-check mt-1">
-                                            <input class="form-check-input" type="checkbox" name="remove_welcome_image" value="1" id="removeImg">
-                                            <label class="form-check-label text-danger small fw-bold" for="removeImg">Remove Image</label>
-                                        </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Pop-up Status</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" name="welcome_status" id="welcome_status" style="width: 50px; height: 25px;" <?php echo ($currentSettings['welcome_status'] ?? 1) == 1 ? 'checked' : ''; ?>>
+                                        <label class="form-check-label fw-medium ms-2" for="welcome_status">Display Welcome Pop-up Site-wide</label>
                                     </div>
-                                <?php endif; ?>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold">Message Content</label>
+                                    <textarea name="welcome_desc" id="input_welcome_desc" class="form-control" rows="4" required><?php echo htmlspecialchars($currentSettings['welcome_desc'] ?? ''); ?></textarea>
+                                    <div class="form-text">Briefly explain announcements, notices, or welcome greetings to first-time visitors.</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Action Button Text</label>
+                                    <input type="text" name="welcome_btn_text" id="input_welcome_btn_text" class="form-control" value="<?php echo htmlspecialchars($currentSettings['welcome_btn_text'] ?? 'Read More'); ?>">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Action Button Link</label>
+                                    <input type="text" name="welcome_btn_link" class="form-control" value="<?php echo htmlspecialchars($currentSettings['welcome_btn_link'] ?? '/about_us'); ?>">
+                                    <div class="form-text">Redirect page path e.g. <code>about_us</code></div>
+                                </div>
+                                <div class="col-md-12 mb-4">
+                                    <label class="form-label fw-bold">Side Image (Optional)</label>
+                                    <div class="p-3 border rounded-3 bg-light d-flex align-items-center gap-3">
+                                        <div class="flex-grow-1">
+                                            <input type="file" name="welcome_image_file" id="input_welcome_image" class="form-control" accept="image/*">
+                                            <div class="form-text">Adds a modern, professional split side-image layout! Recommended: Portrait orientation.</div>
+                                        </div>
+                                        <?php if (!empty($currentSettings['welcome_image'])): ?>
+                                            <div class="position-relative text-center">
+                                                <img src="../images/<?php echo $currentSettings['welcome_image']; ?>" id="preview_img_source" style="height: 100px; width: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #ddd;">
+                                                <div class="form-check mt-1">
+                                                    <input class="form-check-input" type="checkbox" name="remove_welcome_image" value="1" id="removeImg">
+                                                    <label class="form-check-label text-danger small fw-bold" for="removeImg">Remove Image</label>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" name="update_popup" class="btn btn-primary rounded-pill px-4 shadow-sm"><i class="fas fa-save me-2"></i>Save Pop-up Settings</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Column -->
+            <div class="col-lg-5 mt-4 mt-lg-0">
+                <div class="sticky-top" style="top: 20px; z-index: 5;">
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                        <div class="card-header bg-dark text-white border-0 py-3">
+                            <h6 class="mb-0 small text-uppercase fw-bold"><i class="fas fa-eye me-2"></i>Live Popup Preview</h6>
+                        </div>
+                        <div class="card-body bg-light p-4">
+                            <!-- Simulated Popup Content -->
+                            <div id="live_popup_preview" style="background: #fff; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; width: 100%;">
+                                <div style="display: flex; flex-wrap: wrap;">
+                                    <div id="preview_image_container" style="width: 40%; min-height: 250px; background: url('../images/<?php echo $currentSettings['welcome_image'] ?? ''; ?>') no-repeat center center / cover; display: <?php echo !empty($currentSettings['welcome_image']) ? 'block' : 'none'; ?>;"></div>
+                                    <div style="flex: 1; padding: 30px; background: #ffffff; color: #002147;">
+                                        <div style="background: #fdf2d0; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                                            <i class="fas fa-bullhorn" style="font-size: 16px; color: #fdc800;"></i>
+                                        </div>
+                                        <h4 id="preview_title" style="color: #002147; font-size: 22px; font-weight: 800; margin-bottom: 15px; letter-spacing: -0.5px;"><?php echo htmlspecialchars($currentSettings['welcome_title'] ?? 'Welcome to LKVM'); ?></h4>
+                                        <p id="preview_desc" style="font-size: 14px; line-height: 1.7; color: #4b5563; margin-bottom: 25px; white-space: pre-wrap;"><?php echo nl2br(htmlspecialchars($currentSettings['welcome_desc'] ?? '')); ?></p>
+                                        <a href="javascript:void(0)" id="preview_btn" style="background: #002147; color: #ffffff; padding: 10px 24px; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 13px; display: inline-block; box-shadow: 0 4px 10px rgba(0,33,71,0.15);"><?php echo htmlspecialchars($currentSettings['welcome_btn_text'] ?? 'Read More'); ?></a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3 text-center small text-muted">
+                                <i class="fas fa-info-circle me-1"></i> This is a scaled-down preview of how the popup appears to users.
                             </div>
                         </div>
                     </div>
-                    <button type="submit" name="update_popup" class="btn btn-primary rounded-pill px-4 shadow-sm"><i class="fas fa-save me-2"></i>Save Pop-up Settings</button>
-                </form>
+                </div>
             </div>
         </div>
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputTitle = document.getElementById('input_welcome_title');
+        const inputDesc = document.getElementById('input_welcome_desc');
+        const inputBtnText = document.getElementById('input_welcome_btn_text');
+        const inputImage = document.getElementById('input_welcome_image');
+        const removeImgCheck = document.getElementById('removeImg');
+
+        const previewTitle = document.getElementById('preview_title');
+        const previewDesc = document.getElementById('preview_desc');
+        const previewBtn = document.getElementById('preview_btn');
+        const previewImageContainer = document.getElementById('preview_image_container');
+
+        const updatePreview = () => {
+            previewTitle.innerText = inputTitle.value || 'Welcome to LKVM';
+            previewDesc.innerText = inputDesc.value || '';
+            previewBtn.innerText = inputBtnText.value || 'Read More';
+            
+            const bg = previewImageContainer.style.backgroundImage;
+            const hasActualImage = bg && bg !== 'none' && bg !== 'url("")' && !bg.match(/\/images\/?['"]?\)$/);
+
+            if (hasActualImage && !(removeImgCheck && removeImgCheck.checked)) {
+                previewImageContainer.style.display = 'block';
+            } else {
+                previewImageContainer.style.display = 'none';
+            }
+        };
+
+        inputTitle.addEventListener('input', updatePreview);
+        inputDesc.addEventListener('input', updatePreview);
+        inputBtnText.addEventListener('input', updatePreview);
+        if (removeImgCheck) removeImgCheck.addEventListener('change', updatePreview);
+
+        inputImage.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImageContainer.style.backgroundImage = `url('${e.target.result}')`;
+                    previewImageContainer.style.display = 'block';
+                    if (removeImgCheck) removeImgCheck.checked = false;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+    </script>
+
 
     <!-- KYP Tab -->
     <div class="tab-pane fade" id="pills-kyp" role="tabpanel">

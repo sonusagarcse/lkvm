@@ -1,6 +1,17 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (!isset($_SESSION['admin_id']) || $_SESSION['admin_type'] != 1) {
+    header("Location: ../login.php");
+    exit();
+}
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_settings'])) {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
     $site_url = $_POST['site_url'];
     $site_name = $_POST['site_name'];
     $site_short_name = $_POST['site_short_name'];
@@ -40,6 +51,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_settings'])) {
         $success_msg = "Settings updated successfully!";
     } else {
         $error_msg = "Error updating settings: " . $con->error;
+    }
+}
+
+// Handle Change Password submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
+    
+    $current_pass = $_POST['current_password'] ?? '';
+    $new_pass = $_POST['new_password'] ?? '';
+    $confirm_pass = $_POST['confirm_password'] ?? '';
+
+    if ($new_pass !== $confirm_pass) {
+        $error_msg = "New passwords do not match.";
+    } elseif (strlen($new_pass) < 6) {
+        $error_msg = "New password must be at least 6 characters long.";
+    } else {
+        $admin_id = $_SESSION['admin_id'];
+        $stmt = $con->prepare("SELECT pass FROM admin_login WHERE id = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param("i", $admin_id);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            if ($row = $res->fetch_assoc()) {
+                $is_valid = false;
+                // Verify against password_hash or legacy plaintext password
+                if (password_verify($current_pass, $row['pass'])) {
+                    $is_valid = true;
+                } elseif ($current_pass === $row['pass']) {
+                    $is_valid = true;
+                }
+                
+                if ($is_valid) {
+                    $hashed_pass = password_hash($new_pass, PASSWORD_DEFAULT);
+                    $update_stmt = $con->prepare("UPDATE admin_login SET pass = ? WHERE id = ?");
+                    if ($update_stmt) {
+                        $update_stmt->bind_param("si", $hashed_pass, $admin_id);
+                        if ($update_stmt->execute()) {
+                            $success_msg = "Password updated successfully.";
+                            security_log('ADMIN_PASSWORD_CHANGED', "Admin User ID: $admin_id successfully changed password");
+                        } else {
+                            $error_msg = "Failed to update password.";
+                        }
+                        $update_stmt->close();
+                    }
+                } else {
+                    $error_msg = "Incorrect current password.";
+                }
+            } else {
+                $error_msg = "User record not found.";
+            }
+            $stmt->close();
+        }
     }
 }
 

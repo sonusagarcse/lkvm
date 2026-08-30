@@ -1,5 +1,9 @@
 <?php
-error_reporting(0);
+// Include security core first
+require_once __DIR__ . '/includes/security.php';
+
+// Emit secure headers
+emit_security_headers();
 
 // Include cache helper
 require_once __DIR__ . '/cache_helper.php';
@@ -28,16 +32,28 @@ $dbUser = getenv('DB_USER') !== false ? getenv('DB_USER') : "root";
 $dbPass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : "";
 $dbName = getenv('DB_NAME') !== false ? getenv('DB_NAME') : "lkvm";
 
-// Use persistent connection for better performance
-$con = mysqli_connect($dbHost, $dbUser, $dbPass, $dbName);
+// Connect with error suppression for users, log details internally
+try {
+    $con = mysqli_connect($dbHost, $dbUser, $dbPass, $dbName);
+} catch (mysqli_sql_exception $e) {
+    if (function_exists('security_log')) {
+        security_log('DATABASE_ERROR', $e->getMessage());
+    }
+    die("<div style='font-family:sans-serif; text-align:center; padding:50px;'>
+            <h2>Database Connection Error</h2>
+            <p>Could not connect to the database server. Please try again later.</p>
+         </div>");
+}
 
 if (!$con) {
-    die("Connection failed: " . mysqli_connect_error());
+    if (function_exists('security_log')) {
+        security_log('DATABASE_ERROR', mysqli_connect_error());
+    }
+    die("Connection failed. Please try again later.");
 }
 
 mysqli_set_charset($con, "utf8");
 
-// Fetch Global Settings (Cached)
 // Fetch Global Settings (Cached)
 $settings = cache_remember('global_settings', function () use ($con) {
     if ($con) {
@@ -48,8 +64,6 @@ $settings = cache_remember('global_settings', function () use ($con) {
 }, 3600);
 
 // Map Settings to Global Variables used in templates
-// Map Settings to Global Variables used in templates
-// Dynamic SITE_URL Detection
 $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
 $host = $_SERVER['HTTP_HOST'];
 // Calculate relative path from Document Root to this file's directory
@@ -61,20 +75,17 @@ $base_path = str_replace($doc_root, '', $script_path);
 $base_path = trim($base_path, '/');
 $SITE_URL = $protocol . "://" . $host . ($base_path ? "/" . $base_path : "");
 
-// Allow database override if strictly needed (optional, keeping priority on dynamic for now as requested)
-if (!empty($settings['site_url']) && $settings['site_url'] !== 'http://localhost/lkvm') {
-    // Uncomment the line below if you prefer the DB setting to take precedence over dynamic detection
-    // $SITE_URL = $settings['site_url'];
-}
 $SITE_NAME = $settings['site_name'] ?? 'LKVM';
-$SITE_TITLE = $settings['site_name'] ?? 'LKVM'; // Use site_name as title default
+$SITE_TITLE = $settings['site_name'] ?? 'LKVM';
 $CONTACT_EMAIL = $settings['email'] ?? '';
 $CONTACT_MOBILE = $settings['mobile'] ?? '';
 $CONTACT_MOBILE1 = $settings['mobile1'] ?? '';
 $ADDRESS = $settings['address'] ?? '';
+$RAZORPAY_KEY_ID = $settings['razorpay_key_id'] ?? '';
+$RAZORPAY_KEY_SECRET = $settings['razorpay_key_secret'] ?? '';
 
-// Error reporting (comment these lines in production)
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
+// Production Configuration - suppress screen error display
+error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 ?>

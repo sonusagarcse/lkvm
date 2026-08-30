@@ -13,9 +13,10 @@ $result = $stmt->get_result();
 if ($result->num_rows > 0) {
     $res = $result->fetch_assoc();
 } else {
-    // If no page found, we could redirect to a 404 page or show a generic message
+    // If no page found, include the aesthetic 404 page
     http_response_code(404);
-    $res = null;
+    include '404.php';
+    exit();
 }
 ?>
 <!doctype html>

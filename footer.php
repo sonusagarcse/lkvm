@@ -1,6 +1,6 @@
 <?php
 // Include database connection
-require_once 'connection.php';
+require_once __DIR__ . '/connection.php';
 
 // Define contact variables from global settings
 $ADDRESS = $ADDRESS ?? $settings['address'] ?? 'Address not available';
@@ -300,15 +300,15 @@ if (isset($con)) {
             <?php endif; ?>
             
             <!-- Right Side Text / Content -->
-            <div class="welcome-popup-body" style="flex: 1; min-width: 280px; padding: 40px 30px; display: flex; flex-direction: column; justify-content: center; background: linear-gradient(135deg, #002147 0%, #001530 100%); color: #ffffff;">
-                <div style="background: rgba(253, 200, 0, 0.15); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <div class="welcome-popup-body" style="flex: 1; min-width: 280px; padding: 45px 35px; display: flex; flex-direction: column; justify-content: center; background: #ffffff; color: #002147;">
+                <div style="background: #fdf2d0; width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 25px;">
                     <i class="fas fa-bullhorn" style="font-size: 18px; color: #fdc800;"></i>
                 </div>
-                <h3 style="color: #fdc800; font-size: 22px; margin: 0 0 12px 0; font-weight: 700; letter-spacing: 0.5px; line-height: 1.3; font-family: inherit;"><?php echo htmlspecialchars($popup_title); ?></h3>
-                <p style="font-size: 14px; line-height: 1.6; color: #e0e0e0; margin: 0 0 25px 0; font-family: inherit; font-weight: 400;"><?php echo nl2br(htmlspecialchars($popup_desc)); ?></p>
-                <div style="display: flex; gap: 12px; align-items: center;">
-                    <a href="<?php echo htmlspecialchars($popup_btn_link); ?>" style="background: #fdc800; color: #002147; padding: 12px 28px; border-radius: 30px; font-weight: 700; text-decoration: none; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(253, 200, 0, 0.35); text-align: center;" onmouseover="this.style.background='#ffffff'; this.style.color='#002147'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='#fdc800'; this.style.color='#002147'; this.style.transform='translateY(0)';" onclick="closeFlashCard()"><?php echo htmlspecialchars($popup_btn_text); ?></a>
-                    <button onclick="closeFlashCard()" style="background: transparent; color: rgba(255,255,255,0.75); border: 1px solid rgba(255,255,255,0.3); padding: 12px 24px; border-radius: 30px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px;" onmouseover="this.style.background='rgba(255,255,255,0.08)'; this.style.color='#ffffff'; this.style.borderColor='rgba(255,255,255,0.5)';" onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.75)'; this.style.borderColor='rgba(255,255,255,0.3)';">Skip</button>
+                <h3 style="color: #002147; font-size: 26px; margin: 0 0 15px 0; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; font-family: inherit;"><?php echo htmlspecialchars($popup_title); ?></h3>
+                <p style="font-size: 15px; line-height: 1.7; color: #4b5563; margin: 0 0 30px 0; font-family: inherit; font-weight: 400;"><?php echo nl2br(htmlspecialchars($popup_desc)); ?></p>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <a href="<?php echo htmlspecialchars($popup_btn_link); ?>" style="background: #002147; color: #ffffff; padding: 14px 32px; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 14px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 20px rgba(0, 33, 71, 0.15); text-align: center;" onmouseover="this.style.background='#fdc800'; this.style.color='#002147'; this.style.transform='translateY(-3px)';" onmouseout="this.style.background='#002147'; this.style.color='#ffffff'; this.style.transform='translateY(0)';" onclick="closeFlashCard()"><?php echo htmlspecialchars($popup_btn_text); ?></a>
+                    <button onclick="closeFlashCard()" style="background: transparent; color: #64748b; border: 1px solid #e2e8f0; padding: 14px 28px; border-radius: 50px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#f8fafc'; this.style.color='#002147'; this.style.borderColor='#cbd5e1';" onmouseout="this.style.background='transparent'; this.style.color='#64748b'; this.style.borderColor='#e2e8f0';">Skip</button>
                 </div>
             </div>
 
@@ -346,5 +346,124 @@ function closeFlashCard() {
     }
     sessionStorage.setItem("flashCardSeen", "true");
 }
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('<?php echo $SITE_URL; ?>/sw.js')
+            .then(reg => console.log('Service Worker registered', reg))
+            .catch(err => console.log('Service Worker registration failed', err));
+    });
+}
+
+// Handle PWA Install Prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // You can show a custom install button here if desired
+    console.log('PWA install prompt captured');
+});
 </script>
 <?php endif; ?>
+
+<!-- Floating Contact Buttons (WhatsApp & Call) -->
+<div class="floating-contact-wrap">
+    <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', ($settings['whatsapp'] ?? $MOBILE)); ?>" class="floating-btn whatsapp-btn" target="_blank" title="WhatsApp Us">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+    <a href="tel:<?php echo $MOBILE; ?>" class="floating-btn call-btn" title="Call Us">
+        <i class="fas fa-phone-alt"></i>
+    </a>
+</div>
+
+<style>
+.floating-contact-wrap {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.floating-btn {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff !important;
+    font-size: 26px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-decoration: none !important;
+    position: relative;
+}
+
+.whatsapp-btn {
+    background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+}
+
+.call-btn {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.floating-btn:hover {
+    transform: scale(1.1) translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+    color: #ffffff !important;
+}
+
+.floating-btn::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: inherit;
+    opacity: 0.5;
+    z-index: -1;
+    animation: floating-pulse 2s infinite;
+}
+
+@keyframes floating-pulse {
+    0% { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+@media (max-width: 767px) {
+    .floating-contact-wrap {
+        bottom: 20px;
+        left: 20px;
+        gap: 12px;
+    }
+    .floating-btn {
+        width: 48px;
+        height: 48px;
+        font-size: 22px;
+    }
+}
+</style>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var token = "<?php echo function_exists('csrf_token') ? csrf_token() : ''; ?>";
+    if (token) {
+        var forms = document.getElementsByTagName("form");
+        for (var i = 0; i < forms.length; i++) {
+            if (forms[i].method && forms[i].method.toLowerCase() === "post") {
+                // Check if csrf_token input already exists
+                if (!forms[i].querySelector('input[name="csrf_token"]')) {
+                    var input = document.createElement("input");
+                    input.type = "hidden";
+                    input.name = "csrf_token";
+                    input.value = token;
+                    forms[i].appendChild(input);
+                }
+            }
+        }
+    }
+});
+</script>

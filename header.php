@@ -1,4 +1,4 @@
-<?php require_once 'includes/visitor_tracker.php'; ?>
+<?php require_once __DIR__ . '/includes/visitor_tracker.php'; ?>
 <?php
 // Generate dynamic menu
 $dynamic_menu_html = '';
@@ -98,10 +98,10 @@ $dynamic_menu_html .= '
             <div class="site-logo-section">
                 <div class="site-branding">
                     <a class="dark-logo" href="<?php echo $SITE_URL; ?>/index">
-                        <img src="images/logo.png" alt="<?php echo $SITE_TITLE; ?> Logo/" style="height:70px;">
+                        <img src="<?php echo $SITE_URL; ?>/images/logo.png" alt="<?php echo $SITE_TITLE; ?> Logo/" style="height:70px;">
                     </a>
                     <a class="light-logo" href="<?php echo $SITE_URL; ?>/index">
-                        <img src="images/logo.png" alt="<?php echo $SITE_TITLE; ?> Logo/" style="height:70px;">
+                        <img src="<?php echo $SITE_URL; ?>/images/logo.png" alt="<?php echo $SITE_TITLE; ?> Logo/" style="height:70px;">
                     </a>
                 </div>
                 <style>
@@ -192,7 +192,7 @@ $dynamic_menu_html .= '
     <div class="mean-bar">
         <div class="mobile-logo">
             <div class="site-branding">
-                <a class="dark-logo" href="<?php echo $SITE_URL; ?>"><img src="images/logo.png"
+                <a class="dark-logo" href="<?php echo $SITE_URL; ?>"><img src="<?php echo $SITE_URL; ?>/images/logo.png"
                         alt="<?php echo $SITE_TITLE; ?>"></a>
             </div>
         </div>

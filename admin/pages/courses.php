@@ -1,4 +1,12 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (!isset($_SESSION['admin_id']) || $_SESSION['admin_type'] != 1) {
+    header("Location: ../login.php");
+    exit();
+}
+
 // Handle actions
 $action = isset($_GET['action']) ? $_GET['action'] : 'list';
 $success_msg = '';
@@ -6,6 +14,9 @@ $error_msg = '';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
     if (isset($_POST['add_course']) || isset($_POST['edit_course'])) {
         $title = $_POST['title'];
         $category = $_POST['category'];

@@ -41,16 +41,31 @@ if (isset($_GET['delete'])) {
 
 // Handle Add Photo
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_photo'])) {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
+    
     $cid = intval($_POST['cid']);
     $title = mysqli_real_escape_string($con, $_POST['title']);
     $name = isset($_POST['name']) ? mysqli_real_escape_string($con, $_POST['name']) : $title;
     $date = date('d-m-Y');
 
-    if (isset($_FILES['img']) && $_FILES['img']['error'] == 0) {
-        $filename = time() . '_' . $_FILES['img']['name'];
-        if (move_uploaded_file($_FILES['img']['tmp_name'], $uploadDir . $filename)) {
-            $query = "INSERT INTO photos (cid, title, img, date, status, name) VALUES ('$cid', '$title', '$filename', '$date', 1, '$name')";
-            mysqli_query($con, $query);
+    if (isset($_FILES['img']) && $_FILES['img']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        
+        $upload_result = secure_upload_file($_FILES['img'], $uploadDir, $allowed_exts, $allowed_mimes, 2097152); // max 2MB
+        
+        if ($upload_result['success']) {
+            $filename = $upload_result['filename'];
+            
+            $stmt = $con->prepare("INSERT INTO photos (cid, title, img, date, status, name) VALUES (?, ?, ?, ?, 1, ?)");
+            if ($stmt) {
+                $stmt->bind_param("issss", $cid, $title, $filename, $date, $name);
+                $stmt->execute();
+                $stmt->close();
+            }
+
             // Clear cache for this category
             if (function_exists('cache_delete')) {
                 cache_delete('members_photos_' . $cid);
@@ -62,6 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_photo'])) {
                 cache_delete('logos_photos_10');
 
             echo "<script>window.location.href='gallery.php?msg=saved&cid=$cid';</script>";
+        } else {
+            die("Upload failed: " . e($upload_result['error']));
         }
     }
 }

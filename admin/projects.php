@@ -26,6 +26,10 @@ if (isset($_GET['delete'])) {
 
 // Handle Add/Edit
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_project'])) {
+    if (!verify_csrf_token()) {
+        die("CSRF validation failed.");
+    }
+
     $title = mysqli_real_escape_string($con, $_POST['title']);
     $description = mysqli_real_escape_string($con, $_POST['description']);
     $link = mysqli_real_escape_string($con, $_POST['link']);
@@ -33,33 +37,61 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_project'])) {
     $id = !empty($_POST['id']) ? intval($_POST['id']) : 0;
 
     $imageName = '';
-    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-        $imageName = time() . '_' . $_FILES['image']['name'];
-        move_uploaded_file($_FILES['image']['tmp_name'], $uploadDir . $imageName);
+    if (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $allowed_exts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         
-        // Delete old image if editing
-        if ($id > 0) {
-            $q = mysqli_query($con, "SELECT image FROM projects WHERE id = $id");
-            if ($r = mysqli_fetch_assoc($q)) {
-                if (!empty($r['image']) && file_exists($uploadDir . $r['image'])) {
-                    unlink($uploadDir . $r['image']);
+        $upload_result = secure_upload_file($_FILES['image'], $uploadDir, $allowed_exts, $allowed_mimes, 3145728); // max 3MB
+        
+        if ($upload_result['success']) {
+            $imageName = $upload_result['filename'];
+            
+            // Delete old image if editing
+            if ($id > 0) {
+                $stmt = $con->prepare("SELECT image FROM projects WHERE id = ?");
+                if ($stmt) {
+                    $stmt->bind_param("i", $id);
+                    $stmt->execute();
+                    $res = $stmt->get_result();
+                    if ($r = $res->fetch_assoc()) {
+                        if (!empty($r['image']) && file_exists($uploadDir . $r['image'])) {
+                            @unlink($uploadDir . $r['image']);
+                        }
+                    }
+                    $stmt->close();
                 }
             }
+        } else {
+            die("Upload failed: " . e($upload_result['error']));
         }
     }
 
     if ($id > 0) {
-        $imgSQL = !empty($imageName) ? ", image='$imageName'" : "";
-        $query = "UPDATE projects SET title='$title', description='$description', link='$link', status='$status' $imgSQL WHERE id=$id";
+        if (!empty($imageName)) {
+            $stmt = $con->prepare("UPDATE projects SET title=?, description=?, link=?, status=?, image=? WHERE id=?");
+            if ($stmt) {
+                $stmt->bind_param("sssssi", $title, $description, $link, $status, $imageName, $id);
+                $stmt->execute();
+                $stmt->close();
+            }
+        } else {
+            $stmt = $con->prepare("UPDATE projects SET title=?, description=?, link=?, status=? WHERE id=?");
+            if ($stmt) {
+                $stmt->bind_param("ssssi", $title, $description, $link, $status, $id);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
     } else {
-        $query = "INSERT INTO projects (title, description, image, link, status) VALUES ('$title', '$description', '$imageName', '$link', '$status')";
+        $stmt = $con->prepare("INSERT INTO projects (title, description, image, link, status) VALUES (?, ?, ?, ?, ?)");
+        if ($stmt) {
+            $stmt->bind_param("sssss", $title, $description, $imageName, $link, $status);
+            $stmt->execute();
+            $stmt->close();
+        }
     }
 
-    if (mysqli_query($con, $query)) {
-        echo "<script>window.location.href='projects.php?msg=saved';</script>";
-    } else {
-        $error = "Database Error: " . mysqli_error($con);
-    }
+    echo "<script>window.location.href='projects.php?msg=saved';</script>";
 }
 ?>
 
