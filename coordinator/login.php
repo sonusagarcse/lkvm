@@ -250,6 +250,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <?php endif; ?>
 
                         <form method="POST" action="">
+                            <?php echo csrf_field(); ?>
                             <div class="mb-3 text-start">
                                 <label class="form-label">Email Address</label>
                                 <div class="input-group">

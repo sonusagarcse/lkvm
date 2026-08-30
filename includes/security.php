@@ -85,8 +85,17 @@ function csrf_field() {
 
 /**
  * Validate CSRF Token
+ * @param string|null $custom_token Optional token to validate (e.g. from GET requests)
  */
-function verify_csrf_token() {
+function verify_csrf_token($custom_token = null) {
+    if ($custom_token !== null) {
+        if (empty($_SESSION['csrf_token']) || empty($custom_token)) {
+            security_log('CSRF_FAILURE', 'Missing CSRF token for custom validation');
+            return false;
+        }
+        return hash_equals($_SESSION['csrf_token'], $custom_token);
+    }
+
     // If not POST/PUT/PATCH/DELETE, don't require token
     if (!in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'PATCH', 'DELETE'])) {
         return true;
@@ -95,7 +104,7 @@ function verify_csrf_token() {
     $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     
     if (empty($_SESSION['csrf_token']) || empty($token)) {
-        security_log('CSRF_FAILURE', 'Missing CSRF token');
+        security_log('CSRF_FAILURE', 'Missing CSRF token in POST request');
         return false;
     }
     
