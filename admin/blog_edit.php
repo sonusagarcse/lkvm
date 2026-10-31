@@ -172,8 +172,34 @@ $cats_q = mysqli_query($con, "SELECT id, name FROM blog_categories WHERE status 
 require_once 'includes/header.php';
 ?>
 
-<!-- Summernote Lite Editor CSS -->
-<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+<!-- Summernote Lite Editor CSS (via High-Speed Cloudflare CDN) -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.css" rel="stylesheet">
+<style>
+.note-editor.note-frame {
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+}
+.note-toolbar {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 8px 12px !important;
+}
+.note-btn {
+    border-radius: 6px !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #334155 !important;
+}
+.note-editable {
+    font-size: 15.5px !important;
+    line-height: 1.75 !important;
+    color: #1e293b !important;
+    min-height: 360px !important;
+    background: #ffffff !important;
+}
+</style>
 
 <div class="row mb-4 align-items-center">
     <div class="col-md-7">
@@ -239,7 +265,7 @@ require_once 'includes/header.php';
                     <!-- Rich Text Editor -->
                     <div class="mb-2">
                         <label class="form-label fw-bold">Full Content Body <span class="text-danger">*</span></label>
-                        <textarea name="content" id="blog_content"><?php echo htmlspecialchars($blog['content'] ?? ''); ?></textarea>
+                        <textarea name="content" id="blog_content" class="form-control" rows="14" style="width: 100%; min-height: 380px; font-family: inherit; font-size: 15px; line-height: 1.6;"><?php echo htmlspecialchars($blog['content'] ?? ''); ?></textarea>
                     </div>
                 </div>
             </div>
@@ -416,24 +442,34 @@ require_once 'includes/header.php';
     </div>
 </form>
 
-<!-- Summernote Lite Script -->
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+<!-- Summernote Lite Script (via Cloudflare CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.js"></script>
 <script>
+(function initEditor() {
+    function setupSummernote() {
+        if (window.jQuery && typeof jQuery.fn.summernote === 'function') {
+            $('#blog_content').summernote({
+                placeholder: 'Write your comprehensive blog article here...',
+                tabsize: 2,
+                height: 400,
+                toolbar: [
+                    ['style', ['style']],
+                    ['font', ['bold', 'italic', 'underline', 'clear']],
+                    ['color', ['color']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['table', ['table']],
+                    ['insert', ['link', 'picture', 'video']],
+                    ['view', ['fullscreen', 'codeview', 'help']]
+                ]
+            });
+        } else {
+            setTimeout(setupSummernote, 60);
+        }
+    }
+    setupSummernote();
+})();
+
 document.addEventListener("DOMContentLoaded", function() {
-    $('#blog_content').summernote({
-        placeholder: 'Write your comprehensive blog article here...',
-        tabsize: 2,
-        height: 380,
-        toolbar: [
-            ['style', ['style']],
-            ['font', ['bold', 'italic', 'underline', 'clear']],
-            ['color', ['color']],
-            ['para', ['ul', 'ol', 'paragraph']],
-            ['table', ['table']],
-            ['insert', ['link', 'picture', 'video']],
-            ['view', ['fullscreen', 'codeview', 'help']]
-        ]
-    });
 
     const titleInput = document.getElementById('blog_title');
     const slugInput = document.getElementById('blog_slug');
