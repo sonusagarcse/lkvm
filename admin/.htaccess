@@ -3,16 +3,19 @@ RewriteEngine On
 # Prevent Directory Listing
 Options -Indexes
 
-# 1. Redirect index.php to directory root ./
+# 1. Stop rewrite loop if request was already handled internally
+RewriteCond %{ENV:REDIRECT_STATUS} !^$
+RewriteRule ^ - [L]
+
+# 2. Redirect index.php to directory root ./
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s+(.*?/admin/)index\.php[?\s] [NC]
 RewriteRule ^index\.php$ %1 [R=301,L]
 
-# 2. Externally redirect GET requests for .php to clean URL (preserving query string)
-RewriteCond %{REQUEST_METHOD} !POST
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s+([^.?]+)\.php([?\s]) [NC]
-RewriteRule ^ %1 [R=301,L,NE]
+# 3. Only externally redirect if user explicitly requested .php in the URL
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s+([^.?\s]+)\.php(\?[^\s]*)?\s+HTTP/ [NC]
+RewriteRule ^([a-zA-Z0-9_-]+)\.php$ $1 [R=301,L,NE]
 
-# 3. Internally rewrite extensionless request to .php file if file exists
+# 4. Internally rewrite clean extensionless request to existing .php file
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}.php -f
 RewriteRule ^([a-zA-Z0-9_-]+)/?$ $1.php [L,QSA]

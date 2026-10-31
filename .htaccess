@@ -8,6 +8,10 @@ RewriteRule ^blog/category/([a-zA-Z0-9_-]+)/?$ blog.php?category=$1 [QSA,L]
 RewriteRule ^blog/([a-zA-Z0-9_-]+)/?$ blog_detail.php?slug=$1 [QSA,L]
 RewriteRule ^blog/?$ blog.php [QSA,L]
 
+# Let Admin Directory handle its own rules without root interference
+RewriteCond %{REQUEST_URI} ^/(?:lkvm/)?admin [NC]
+RewriteRule ^ - [L]
+
 # Ensure HTTPS
 # RewriteCond %{HTTPS} off
 # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
