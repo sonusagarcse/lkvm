@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['admin_id']) || $_SESSION['admin_type'] != 1) {
-    header("Location: login.php");
+if (!isset($_SESSION['admin_id']) || ($_SESSION['admin_type'] ?? null) != 1) {
+    header("Location: login");
     exit();
 }
 
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     mysqli_query($con, "DELETE FROM employees WHERE id=$id");
-    header("Location: emp_manage.php?deleted=1");
+    header("Location: emp_manage?deleted=1");
     exit();
 }
 
@@ -102,7 +102,7 @@ include 'includes/header.php';
                                 <td>₹<?php echo number_format($row['base_salary'], 2); ?></td>
                                 <td>
                                     <button class="btn btn-sm btn-info" onclick='editEmp(<?php echo json_encode($row); ?>)'><i class="fas fa-edit"></i></button>
-                                    <a href="emp_manage.php?delete=<?php echo $row['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this employee?');"><i class="fas fa-trash"></i></a>
+                                    <a href="emp_manage?delete=<?php echo $row['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this employee?');"><i class="fas fa-trash"></i></a>
                                 </td>
                             </tr>
                         <?php endwhile; ?>

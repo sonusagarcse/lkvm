@@ -14,7 +14,7 @@ if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     // For videos, we just delete the record. No file to unlink since it's a URL.
     mysqli_query($con, "DELETE FROM videos WHERE id = $id");
-    echo "<script>window.location.href='video_gallery.php?msg=deleted&cid=$catFilter';</script>";
+    echo "<script>window.location.href='video_gallery?msg=deleted&cid=$catFilter';</script>";
 }
 
 // Handle Add Video
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_video'])) {
     if (!empty($vdo)) {
         $query = "INSERT INTO videos (cid, vdo, status) VALUES ('$cid', '$vdo', 1)";
         if (mysqli_query($con, $query)) {
-            echo "<script>window.location.href='video_gallery.php?msg=saved&cid=$cid';</script>";
+            echo "<script>window.location.href='video_gallery?msg=saved&cid=$cid';</script>";
         } else {
             $error = "Error adding video: " . mysqli_error($con);
         }
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_category'])) {
     // Checking schema via logic: likely 'name' and 'status' are key.
     $query = "INSERT INTO video_category (name, status) VALUES ('$catName', 1)";
     mysqli_query($con, $query);
-    echo "<script>window.location.href='video_gallery.php?msg=cat_saved';</script>";
+    echo "<script>window.location.href='video_gallery?msg=cat_saved';</script>";
 }
 
 // Fetch Categories
@@ -79,10 +79,10 @@ while ($r = mysqli_fetch_assoc($cQ))
                 ?>
             </button>
             <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="video_gallery.php">All Categories</a></li>
+                <li><a class="dropdown-item" href="video_gallery">All Categories</a></li>
                 <?php foreach ($cats as $c): ?>
                     <li><a class="dropdown-item"
-                            href="video_gallery.php?cid=<?php echo $c['id']; ?>"><?php echo $c['name']; ?></a></li>
+                            href="video_gallery?cid=<?php echo $c['id']; ?>"><?php echo $c['name']; ?></a></li>
                 <?php endforeach; ?>
             </ul>
         </div>
@@ -125,7 +125,7 @@ while ($r = mysqli_fetch_assoc($cQ))
                         <div class="card-body p-3">
                             <small class="text-muted d-block mb-2">' . htmlspecialchars($row['cat_name']) . '</small>
                             <p class="text-truncate" title="' . htmlspecialchars($row['vdo']) . '"><small>' . htmlspecialchars($row['vdo']) . '</small></p>
-                            <a href="video_gallery.php?delete=' . $row['id'] . '&cid=' . $catFilter . '" class="btn btn-danger btn-sm w-100" onclick="return confirm(\'Are you sure?\')"><i class="fas fa-trash"></i> Delete</a>
+                            <a href="video_gallery?delete=' . $row['id'] . '&cid=' . $catFilter . '" class="btn btn-danger btn-sm w-100" onclick="return confirm(\'Are you sure?\')"><i class="fas fa-trash"></i> Delete</a>
                         </div>
                     </div>
                 </div>';

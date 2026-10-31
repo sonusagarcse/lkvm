@@ -5,6 +5,7 @@ require_once 'connection.php';
 echo '<?xml version="1.0" encoding="UTF-8"?>';
 ?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    
     <!-- Static Pages -->
     <url>
         <loc><?php echo $SITE_URL; ?>/</loc>
@@ -26,16 +27,37 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
         <priority>0.7</priority>
         <changefreq>daily</changefreq>
     </url>
+    <url>
+        <loc><?php echo $SITE_URL; ?>/blog</loc>
+        <priority>0.9</priority>
+        <changefreq>daily</changefreq>
+    </url>
 
     <?php
-    // Dynamic News items (assuming news.php?id=... logic exists if needed, or just link to list)
-    // For now, index the archive pages mainly. 
-    // If there were individual news pages like news_detail.php?id=123, we'd loop here:
-    /*
-    $res = mysqli_query($con, "SELECT id FROM news WHERE status=1");
-    while($row = mysqli_fetch_assoc($res)) {
-        echo '<url><loc>'.$SITE_URL.'/news_detail.php?id='.$row['id'].'</loc><priority>0.6</priority></url>';
+    // Dynamic Blog Articles
+    $b_res = mysqli_query($con, "SELECT slug, updated_at, published_at FROM blogs WHERE status = 1 ORDER BY published_at DESC");
+    if ($b_res) {
+        while ($b_row = mysqli_fetch_assoc($b_res)) {
+            $last_date = date('Y-m-d', strtotime($b_row['updated_at'] ?? $b_row['published_at']));
+            echo "    <url>\n";
+            echo "        <loc>" . htmlspecialchars($SITE_URL . '/blog/' . $b_row['slug']) . "</loc>\n";
+            echo "        <lastmod>" . $last_date . "</lastmod>\n";
+            echo "        <changefreq>weekly</changefreq>\n";
+            echo "        <priority>0.8</priority>\n";
+            echo "    </url>\n";
+        }
     }
-    */
+
+    // Dynamic Blog Categories
+    $cat_res = mysqli_query($con, "SELECT slug FROM blog_categories WHERE status = 1");
+    if ($cat_res) {
+        while ($c_row = mysqli_fetch_assoc($cat_res)) {
+            echo "    <url>\n";
+            echo "        <loc>" . htmlspecialchars($SITE_URL . '/blog/category/' . $c_row['slug']) . "</loc>\n";
+            echo "        <changefreq>weekly</changefreq>\n";
+            echo "        <priority>0.7</priority>\n";
+            echo "    </url>\n";
+        }
+    }
     ?>
 </urlset>

@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['admin_id']) || $_SESSION['admin_type'] != 1) {
-    header("Location: login.php");
+if (!isset($_SESSION['admin_id']) || ($_SESSION['admin_type'] ?? null) != 1) {
+    header("Location: login");
     exit();
 }
 
@@ -131,7 +131,7 @@ $dataMap = [
 
     <div class="controls no-print">
         <button class="btn" onclick="window.print()" style="margin-bottom: 10px; width: 100%;">Print Slip</button>
-        <a href="emp_salary_slips.php" class="btn" style="background: #6c757d; display: block; text-align: center;">Back</a>
+        <a href="emp_salary_slips" class="btn" style="background: #6c757d; display: block; text-align: center;">Back</a>
     </div>
 
     <script>

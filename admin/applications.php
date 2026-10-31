@@ -8,7 +8,7 @@ if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     $query = "DELETE FROM career WHERE id = $id";
     if (mysqli_query($con, $query)) {
-        echo "<script>window.location.href='applications.php?msg=deleted';</script>";
+        echo "<script>window.location.href='applications?msg=deleted';</script>";
     }
 }
 ?>
@@ -60,7 +60,7 @@ if (isset($_GET['delete'])) {
                                     <td>{$resumeDisplay}</td>
                                     <td>" . htmlspecialchars($row['date']) . "</td>
                                     <td>
-                                        <a href='applications.php?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure you want to delete this application?\")'><i class='fas fa-trash'></i></a>
+                                        <a href='applications?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure you want to delete this application?\")'><i class='fas fa-trash'></i></a>
                                     </td>
                                   </tr>";
                         }

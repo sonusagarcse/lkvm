@@ -8,7 +8,7 @@ if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     $query = "DELETE FROM studymaterials WHERE id = $id";
     if (mysqli_query($con, $query)) {
-        echo "<script>window.location.href='study_materials.php?msg=deleted';</script>";
+        echo "<script>window.location.href='study_materials?msg=deleted';</script>";
     }
 }
 
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_material'])) {
     }
 
     if (mysqli_query($con, $query)) {
-        echo "<script>window.location.href='study_materials.php?msg=saved';</script>";
+        echo "<script>window.location.href='study_materials?msg=saved';</script>";
     } else {
         $error = "Database Error: " . mysqli_error($con);
     }
@@ -111,7 +111,7 @@ while ($row = mysqli_fetch_assoc($s_res)) {
                                     <td>{$row['date']}</td>
                                     <td>
                                         <button class='btn btn-sm btn-info text-white me-1' onclick='editMaterial(" . json_encode($row) . ")'><i class='fas fa-edit'></i></button>
-                                        <a href='study_materials.php?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
+                                        <a href='study_materials?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
                                     </td>
                                   </tr>";
                         }

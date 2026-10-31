@@ -12,7 +12,7 @@ if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     $query = "DELETE FROM webpage WHERE id = $id";
     if (mysqli_query($con, $query)) {
-        echo "<script>window.location.href='testimonials.php?msg=deleted';</script>";
+        echo "<script>window.location.href='testimonials?msg=deleted';</script>";
         if (function_exists('cache_delete'))
             cache_delete('testimonials_10');
     }
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_testimonial'])) {
     if (mysqli_query($con, $query)) {
         if (function_exists('cache_delete'))
             cache_delete('testimonials_10');
-        echo "<script>window.location.href='testimonials.php?msg=saved';</script>";
+        echo "<script>window.location.href='testimonials?msg=saved';</script>";
     } else {
         $error = "Database Error: " . mysqli_error($con);
     }
@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_testimonial'])) {
                                 <td>{$active}</td>
                                 <td>
                                     <button class='btn btn-sm btn-info text-white me-1' onclick='editTest(" . json_encode($row) . ")'><i class='fas fa-edit'></i></button>
-                                    <a href='testimonials.php?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
+                                    <a href='testimonials?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
                                 </td>
                               </tr>";
                     }

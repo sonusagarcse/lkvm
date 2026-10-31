@@ -5,6 +5,7 @@
 
 <!-- Dynamic SEO Tags -->
 <base href="<?php echo $SITE_URL; ?>/">
+<?php if (empty($custom_seo)): ?>
 <title><?php echo(isset($page_title) ? htmlspecialchars($page_title) . " | " : "") . htmlspecialchars($SITE_NAME); ?></title>
 <meta name="description" content="<?php echo htmlspecialchars($settings['meta_description'] ?? ($SITE_NAME . ' provides classes for computer education and vocational training.')); ?>">
 <meta name="keywords" content="<?php echo htmlspecialchars($settings['meta_keywords'] ?? 'computer classes, vocational training, KYP, coding center'); ?>">
@@ -16,6 +17,7 @@
 <meta property="og:title" content="<?php echo(isset($page_title) ? htmlspecialchars($page_title) . " | " : "") . htmlspecialchars($SITE_NAME); ?>">
 <meta property="og:description" content="<?php echo htmlspecialchars($settings['meta_description'] ?? ''); ?>">
 <meta property="og:image" content="<?php echo !empty($settings['og_image']) ? $settings['og_image'] : $SITE_URL . '/images/logo.png'; ?>">
+<?php endif; ?>
 
 <!-- PWA & Mobile Meta Tags -->
 <link rel="manifest" href="<?php echo $SITE_URL; ?>/pwa/manifest.json">

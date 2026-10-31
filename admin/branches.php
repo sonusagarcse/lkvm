@@ -11,7 +11,7 @@ if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     $query = "DELETE FROM branch WHERE id = $id";
     if (mysqli_query($con, $query)) {
-        echo "<script>window.location.href='branches.php?msg=deleted';</script>";
+        echo "<script>window.location.href='branches?msg=deleted';</script>";
     } else {
         $error = "Error deleting record";
     }
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_branch'])) {
     }
 
     if (mysqli_query($con, $query)) {
-        echo "<script>window.location.href='branches.php?msg=saved';</script>";
+        echo "<script>window.location.href='branches?msg=saved';</script>";
     } else {
         $error = "Database Error: " . mysqli_error($con);
     }
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_branch'])) {
                                 <td>{$active}</td>
                                 <td>
                                     <button class='btn btn-sm btn-info text-white me-1' onclick='editBranch(" . json_encode($row) . ")'><i class='fas fa-edit'></i></button>
-                                    <a href='branches.php?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
+                                    <a href='branches?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
                                 </td>
                               </tr>";
                     }

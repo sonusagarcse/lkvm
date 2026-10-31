@@ -14,7 +14,7 @@ if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     $query = "DELETE FROM contact WHERE id = $id";
     if (mysqli_query($con, $query)) {
-        echo "<script>window.location.href='enquiries.php?msg=deleted';</script>";
+        echo "<script>window.location.href='enquiries?msg=deleted';</script>";
     }
 }
 ?>
@@ -95,7 +95,7 @@ if (isset($_GET['delete'])) {
                                     </td>
                                     <td class='small text-muted'>" . htmlspecialchars($row['date']) . "</td>
                                     <td class='pe-4 text-center'>
-                                        <a href='enquiries.php?delete={$row['id']}&csrf_token={$token}' class='btn btn-sm btn-outline-danger rounded-3' onclick='return confirm(\"Are you sure you want to delete this enquiry?\")' title='Delete Enquiry'><i class='fas fa-trash'></i></a>
+                                        <a href='enquiries?delete={$row['id']}&csrf_token={$token}' class='btn btn-sm btn-outline-danger rounded-3' onclick='return confirm(\"Are you sure you want to delete this enquiry?\")' title='Delete Enquiry'><i class='fas fa-trash'></i></a>
                                     </td>
                                   </tr>";
                         }

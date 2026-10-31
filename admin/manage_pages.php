@@ -11,7 +11,7 @@ if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     $query = "DELETE FROM webpage WHERE id = $id";
     if (mysqli_query($con, $query)) {
-        echo "<script>window.location.href='manage_pages.php?msg=deleted';</script>";
+        echo "<script>window.location.href='manage_pages?msg=deleted';</script>";
     } else {
         $error = "Error deleting record";
     }
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_page'])) {
         }
 
         if (mysqli_query($con, $query)) {
-            echo "<script>window.location.href='manage_pages.php?msg=saved';</script>";
+            echo "<script>window.location.href='manage_pages?msg=saved';</script>";
         } else {
             $error = "Database Error: " . mysqli_error($con);
         }
@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_page'])) {
                                 <td>{$active}</td>
                                 <td>
                                     <button class='btn btn-sm btn-info text-white me-1' onclick='editPage(" . htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8') . ")'><i class='fas fa-edit'></i></button>
-                                    <a href='manage_pages.php?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure you want to delete this page?\")'><i class='fas fa-trash'></i></a>
+                                    <a href='manage_pages?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure you want to delete this page?\")'><i class='fas fa-trash'></i></a>
                                 </td>
                               </tr>";
                     }

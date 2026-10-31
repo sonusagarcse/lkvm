@@ -4,7 +4,7 @@ require_once '../connection.php';
 include 'includes/header.php';
 
 if (!isset($_GET['id'])) {
-    echo "<script>window.location.href='students.php';</script>";
+    echo "<script>window.location.href='students';</script>";
     exit();
 }
 
@@ -27,7 +27,7 @@ if (!$student) {
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center">
         <h2 class="h3 mb-0 text-gray-800">Student Details</h2>
-        <a href="students.php" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back to List</a>
+        <a href="students" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back to List</a>
     </div>
 </div>
 

@@ -15,7 +15,7 @@ if (isset($_GET['delete'])) {
             cache_delete('latest_news_5');
             cache_delete('latest_notices_5');
         }
-        echo "<script>window.location.href='news.php?msg=deleted';</script>";
+        echo "<script>window.location.href='news?msg=deleted';</script>";
     }
 }
 
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_news'])) {
             cache_delete('latest_news_5');
             cache_delete('latest_notices_5');
         }
-        echo "<script>window.location.href='news.php?msg=saved';</script>";
+        echo "<script>window.location.href='news?msg=saved';</script>";
     } else {
         $error = "Database Error: " . mysqli_error($con);
     }
@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_news'])) {
                                 <td>{$active}</td>
                                 <td>
                                     <button class='btn btn-sm btn-info text-white me-1' onclick='editNews(" . json_encode($row) . ")'><i class='fas fa-edit'></i></button>
-                                    <a href='news.php?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
+                                    <a href='news?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
                                 </td>
                               </tr>";
                     }

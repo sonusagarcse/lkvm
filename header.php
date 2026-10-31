@@ -37,6 +37,7 @@ $dynamic_menu_html .= '
         <li class="menu-item"><a href="'.$SITE_URL.'/study_materials.php">Study Materials</a></li>
     </ul>
 </li>
+<li class="menu-item"><a href="'.$SITE_URL.'/blog">Blog</a></li>
 <li class="menu-item"><a href="'.$SITE_URL.'/contact_us.php">Contact us</a></li>
 <li class="menu-item"><a href="'.$SITE_URL.'/donate_us.php" style="background:#fdc800; padding:10px; border-radius:10px;"><blink>Donate us</blink></a></li>
 ';

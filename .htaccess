@@ -1,7 +1,15 @@
 RewriteEngine On
+RewriteBase /lkvm/
 
-# Prevent Directory Listing
-Options -Indexes
+# Prevent Directory Listing and MultiViews
+Options -Indexes -MultiViews
+
+# Blog SEO Friendly Routing
+RewriteCond %{REQUEST_URI} ^/(?:lkvm/)?blog/category/([a-zA-Z0-9_-]+)/?$ [NC]
+RewriteRule ^ blog.php?category=%1 [QSA,L]
+
+RewriteCond %{REQUEST_URI} ^/(?:lkvm/)?blog/([a-zA-Z0-9_-]+)/?$ [NC]
+RewriteRule ^ blog_detail.php?slug=%1 [QSA,L]
 
 # Ensure HTTPS
 # RewriteCond %{HTTPS} off
@@ -66,4 +74,4 @@ RewriteRule ^ - [F]
     AddOutputFilterByType DEFLATE application/rss+xml
     AddOutputFilterByType DEFLATE application/javascript
     AddOutputFilterByType DEFLATE application/x-javascript
-</IfModule> 
+</IfModule>

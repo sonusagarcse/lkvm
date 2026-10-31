@@ -65,10 +65,10 @@ $settings = cache_remember('global_settings', function () use ($con) {
 
 // Map Settings to Global Variables used in templates
 $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
-$host = $_SERVER['HTTP_HOST'];
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 // Calculate relative path from Document Root to this file's directory
 $script_path = str_replace('\\', '/', __DIR__);
-$doc_root = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
+$doc_root = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? '');
 $base_path = str_replace($doc_root, '', $script_path);
 
 // Ensure no double slashes if base_path is empty or just /

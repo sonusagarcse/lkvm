@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['admin_id']) || $_SESSION['admin_type'] != 1) {
-    header("Location: login.php");
+if (!isset($_SESSION['admin_id']) || ($_SESSION['admin_type'] ?? null) != 1) {
+    header("Location: login");
     exit();
 }
 
@@ -176,7 +176,7 @@ include 'includes/header.php';
                             <li><strong>Full Day:</strong> &ge; <?php echo $full_day_hours; ?> hours</li>
                             <li><strong>Half Day:</strong> &ge; <?php echo $half_day_hours; ?> hours</li>
                         </ul>
-                        <small class="text-muted">You can change these rules in <a href="emp_settings.php">Employee Settings</a>.</small>
+                        <small class="text-muted">You can change these rules in <a href="emp_settings">Employee Settings</a>.</small>
                     </div>
                 </div>
             </div>

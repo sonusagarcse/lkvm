@@ -46,7 +46,7 @@ if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     $delQuery = "DELETE FROM registration WHERE id = $id";
     if (mysqli_query($con, $delQuery)) {
-        echo "<script>window.location.href='students.php?msg=deleted';</script>";
+        echo "<script>window.location.href='students?msg=deleted';</script>";
     }
 }
 ?>
@@ -62,7 +62,7 @@ if (isset($_GET['delete'])) {
                 <i class="fas fa-table me-1"></i> Table: registration
             </span>
         </h2>
-        <a href="add_student.php" class="btn btn-success rounded-pill px-4 shadow-sm fw-bold">
+        <a href="add_student" class="btn btn-success rounded-pill px-4 shadow-sm fw-bold">
             <i class="fas fa-user-plus me-2"></i>Add Recent Joined Student
         </a>
     </div>
@@ -154,7 +154,7 @@ if (isset($_GET['delete'])) {
                                     <td>{$status}</td>
                                     <td>
                                         <a href='{$viewLink}' class='btn btn-sm btn-primary' title='View'><i class='fas fa-eye'></i></a>
-                                        <a href='students.php?delete={$row['id']}' class='btn btn-sm btn-danger' title='Delete' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
+                                        <a href='students?delete={$row['id']}' class='btn btn-sm btn-danger' title='Delete' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
                                     </td>
                                   </tr>";
                         }

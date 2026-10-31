@@ -11,7 +11,7 @@ if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     $query = "DELETE FROM courses WHERE id = $id";
     if (mysqli_query($con, $query)) {
-        echo "<script>window.location.href='courses.php?msg=deleted';</script>";
+        echo "<script>window.location.href='courses?msg=deleted';</script>";
     } else {
         $error = "Error deleting record";
     }
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_course'])) {
     }
 
     if (mysqli_query($con, $query)) {
-        echo "<script>window.location.href='courses.php?msg=saved';</script>";
+        echo "<script>window.location.href='courses?msg=saved';</script>";
     } else {
         $error = "Database Error: " . mysqli_error($con);
     }
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_course'])) {
                                 <td>{$active}</td>
                                 <td>
                                     <button class='btn btn-sm btn-info text-white me-1' onclick='editCourse(" . json_encode($row) . ")'><i class='fas fa-edit'></i></button>
-                                    <a href='courses.php?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
+                                    <a href='courses?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
                                 </td>
                               </tr>";
                     }

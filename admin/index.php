@@ -118,7 +118,7 @@ $trendTotals = array_reverse($trendTotals);
                     <div class="stat-icon card-success"><i class="fas fa-user-graduate"></i></div>
                 </div>
                 <h3><?php echo $studentCount; ?></h3>
-                <a href="students.php" class="stretched-link"></a>
+                <a href="students" class="stretched-link"></a>
             </div>
         </div>
     </div>
@@ -132,7 +132,7 @@ $trendTotals = array_reverse($trendTotals);
                     <div class="stat-icon card-primary"><i class="fas fa-code-branch"></i></div>
                 </div>
                 <h3><?php echo $branchCount; ?></h3>
-                <a href="branches.php" class="stretched-link"></a>
+                <a href="branches" class="stretched-link"></a>
             </div>
         </div>
     </div>
@@ -146,7 +146,7 @@ $trendTotals = array_reverse($trendTotals);
                     <div class="stat-icon card-info"><i class="fas fa-book"></i></div>
                 </div>
                 <h3><?php echo $courseCount; ?></h3>
-                <a href="courses.php" class="stretched-link"></a>
+                <a href="courses" class="stretched-link"></a>
             </div>
         </div>
     </div>
@@ -160,7 +160,7 @@ $trendTotals = array_reverse($trendTotals);
                     <div class="stat-icon card-warning"><i class="fas fa-user-tie"></i></div>
                 </div>
                 <h3><?php echo $coordCount; ?></h3>
-                <a href="coordinators.php" class="stretched-link"></a>
+                <a href="coordinators" class="stretched-link"></a>
             </div>
         </div>
     </div>
@@ -174,7 +174,7 @@ $trendTotals = array_reverse($trendTotals);
                     <div class="stat-icon card-danger"><i class="fas fa-comment-alt"></i></div>
                 </div>
                 <h3><?php echo $enquiryCount; ?></h3>
-                <a href="enquiries.php" class="stretched-link"></a>
+                <a href="enquiries" class="stretched-link"></a>
             </div>
         </div>
     </div>
@@ -188,7 +188,7 @@ $trendTotals = array_reverse($trendTotals);
                     <div class="stat-icon card-secondary"><i class="fas fa-user-clock"></i></div>
                 </div>
                 <h3><?php echo $inactiveStudentCount; ?></h3>
-                <a href="students.php" class="stretched-link"></a>
+                <a href="students" class="stretched-link"></a>
             </div>
         </div>
     </div>
@@ -228,7 +228,7 @@ $trendTotals = array_reverse($trendTotals);
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
                 <h6 class="m-0 fw-bold text-dark"><i class="fas fa-list text-warning me-2"></i>Recent Registrations</h6>
-                <a href="students.php" class="btn btn-sm btn-outline-primary rounded-3">View All Registrations</a>
+                <a href="students" class="btn btn-sm btn-outline-primary rounded-3">View All Registrations</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">

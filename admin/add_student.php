@@ -120,14 +120,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div>
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb mb-1">
-                        <li class="breadcrumb-item"><a href="index.php">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="students.php">Students</a></li>
+                        <li class="breadcrumb-item"><a href="index">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="students">Students</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Add Student</li>
                     </ol>
                 </nav>
                 <h3 class="h3 m-0 fw-bold text-dark"><i class="fas fa-user-plus me-2 text-primary"></i>Register New Student</h3>
             </div>
-            <a href="students.php" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm fw-semibold">
+            <a href="students" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm fw-semibold">
                 <i class="fas fa-arrow-left me-2"></i>Back to Student List
             </a>
         </div>

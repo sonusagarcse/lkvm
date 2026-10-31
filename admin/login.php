@@ -1,8 +1,8 @@
 <?php
 session_start();
 // Check if user is already logged in as Super Admin
-if (isset($_SESSION['admin_id']) && $_SESSION['admin_type'] == 1) {
-    header("Location: index.php");
+if (isset($_SESSION['admin_id']) && ($_SESSION['admin_type'] ?? null) == 1) {
+    header("Location: index");
     exit();
 }
 
@@ -60,7 +60,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $_SESSION['admin_type'] = $row['utype'];
                         
                         security_log('ADMIN_LOGIN_SUCCESS', "Admin User ID: {$row['id']} logged in successfully");
-                        header("Location: index.php");
+                        header("Location: index");
                         exit();
                     } else {
                         $error = "Invalid Password";
@@ -277,7 +277,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             </button>
 
                             <div class="pt-2">
-                                <a href="../index.php" class="text-decoration-none text-muted small transition">
+                                <a href="../" class="text-decoration-none text-muted small transition">
                                     <i class="fas fa-arrow-left me-1"></i> Return to Website
                                 </a>
                             </div>

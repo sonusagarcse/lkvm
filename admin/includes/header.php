@@ -49,10 +49,10 @@
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2 mt-2" aria-labelledby="userDropdown" style="border-radius: 15px; min-width: 200px;">
                     <li><h6 class="dropdown-header text-xs text-uppercase fw-bold text-muted pb-2">User Menu</h6></li>
-                    <li><a class="dropdown-item rounded-3 py-2" href="settings.php"><i class="fas fa-user-cog me-2 text-primary"></i> Profile Settings</a></li>
-                    <li><a class="dropdown-item rounded-3 py-2" href="settings.php"><i class="fas fa-shield-alt me-2 text-primary"></i> Security</a></li>
+                    <li><a class="dropdown-item rounded-3 py-2" href="settings"><i class="fas fa-user-cog me-2 text-primary"></i> Profile Settings</a></li>
+                    <li><a class="dropdown-item rounded-3 py-2" href="settings"><i class="fas fa-shield-alt me-2 text-primary"></i> Security</a></li>
                     <li><hr class="dropdown-divider opacity-50"></li>
-                    <li><a class="dropdown-item text-danger rounded-3 py-2" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i> Logout System</a></li>
+                    <li><a class="dropdown-item text-danger rounded-3 py-2" href="logout"><i class="fas fa-sign-out-alt me-2"></i> Logout System</a></li>
                 </ul>
             </div>
         </header>

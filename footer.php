@@ -249,104 +249,446 @@ $EMAIL_ID = $CONTACT_EMAIL ?? $settings['email'] ?? 'lkvmimamganj@gmail.com';
 <script type='text/javascript' src='js/photoswipe-ui-default.min.js?ver=4.1.1-wc.7.4.1'
     id='photoswipe-ui-default-js'></script>
 
-<!-- Site Welcome Flash Card (Fully Dynamic with Optional Split Side Image Layout) -->
+<!-- Site Welcome Card / Popup (Dynamic Layouts & Analytics Tracking) -->
 <?php
 $popup_status = 0;
 $popup_title = 'Welcome to LKVM';
 $popup_desc = 'Empowering communities through Art, Culture, Skill Development, and Quality Education across Bihar.';
-$popup_btn_text = 'Read More';
-$popup_btn_link = 'about_us.php';
+$popup_btn_text = 'Explore More';
+$popup_btn_link = 'about_us';
 $popup_image = '';
+$popup_layout = 'card_cover';
+$popup_badge = 'Important Announcement';
+$popup_btn_secondary_text = 'Close';
+$popup_btn_secondary_link = '#close';
+$popup_btn_color = '#002147';
+$popup_delay = 2;
+$popup_frequency = 'session';
 
 if (isset($con)) {
-    $q = mysqli_query($con, "SELECT welcome_status, welcome_title, welcome_desc, welcome_btn_text, welcome_btn_link, welcome_image FROM global_setting WHERE id = 1");
+    $q = mysqli_query($con, "SELECT welcome_status, welcome_title, welcome_desc, welcome_btn_text, welcome_btn_link, welcome_image, welcome_layout, welcome_badge, welcome_btn_secondary_text, welcome_btn_secondary_link, welcome_btn_color, welcome_delay, welcome_frequency FROM global_setting WHERE id = 1");
     if ($q && mysqli_num_rows($q) > 0) {
         $row = mysqli_fetch_assoc($q);
         $popup_status = intval($row['welcome_status'] ?? 0);
-        $popup_title = $row['welcome_title'] ?? $popup_title;
+        $popup_title = !empty($row['welcome_title']) ? $row['welcome_title'] : $popup_title;
         $popup_desc = $row['welcome_desc'] ?? $popup_desc;
-        $popup_btn_text = $row['welcome_btn_text'] ?? $popup_btn_text;
-        $popup_btn_link = $row['welcome_btn_link'] ?? $popup_btn_link;
+        $popup_btn_text = !empty($row['welcome_btn_text']) ? $row['welcome_btn_text'] : $popup_btn_text;
+        $popup_btn_link = !empty($row['welcome_btn_link']) ? $row['welcome_btn_link'] : $popup_btn_link;
         $popup_image = $row['welcome_image'] ?? '';
+        $popup_layout = !empty($row['welcome_layout']) ? $row['welcome_layout'] : 'card_cover';
+        $popup_badge = !empty($row['welcome_badge']) ? $row['welcome_badge'] : $popup_badge;
+        $popup_btn_secondary_text = $row['welcome_btn_secondary_text'] ?? '';
+        $popup_btn_secondary_link = !empty($row['welcome_btn_secondary_link']) ? $row['welcome_btn_secondary_link'] : '#close';
+        $popup_btn_color = !empty($row['welcome_btn_color']) ? $row['welcome_btn_color'] : '#002147';
+        $popup_delay = max(1, intval($row['welcome_delay'] ?? 2));
+        $popup_frequency = !empty($row['welcome_frequency']) ? $row['welcome_frequency'] : 'session';
     }
 }
 ?>
 
 <?php if ($popup_status == 1): ?>
 <style>
+.welcome-popup-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.7);
+    z-index: 99999;
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+}
+
+.welcome-popup-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -45%) scale(0.95);
+    background: #ffffff;
+    width: 92%;
+    border-radius: 24px;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    overflow: hidden;
+    z-index: 100000;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+    opacity: 0;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.welcome-popup-box.active {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+.welcome-popup-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: rgba(255, 255, 255, 0.85);
+    border: none;
+    color: #1e293b;
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 20;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+}
+
+.welcome-popup-close-btn:hover {
+    background: #0f172a;
+    color: #ffffff;
+    transform: scale(1.05);
+}
+
+.welcome-popup-scrollable {
+    overflow-y: auto;
+    max-height: 90vh;
+}
+
+/* Card Cover Layout - Calibrated for 1280x720 Px (16:9 Aspect Ratio) */
+.popup-layout-card_cover {
+    max-width: 680px;
+    width: 92%;
+}
+.popup-layout-card_cover .popup-cover-img {
+    width: 100%;
+    aspect-ratio: 1280 / 720;
+    max-height: 400px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+.popup-layout-card_cover .popup-cover-img::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 45%;
+    background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
+}
+
+/* Card Split Layout */
+.popup-layout-card_split {
+    max-width: 780px;
+}
+.popup-layout-card_split .popup-split-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+}
+.popup-layout-card_split .popup-split-img {
+    width: 45%;
+    min-width: 280px;
+    background-size: cover;
+    background-position: center;
+    min-height: 340px;
+}
+.popup-layout-card_split .popup-split-body {
+    flex: 1;
+    min-width: 280px;
+}
+
+/* Card Minimal Layout */
+.popup-layout-card_minimal {
+    max-width: 500px;
+}
+
 @media (max-width: 767px) {
-    .welcome-popup-box {
-        max-width: 420px !important;
-    }
-    .welcome-popup-img {
+    .popup-layout-card_split .popup-split-img {
         width: 100% !important;
-        height: 180px !important;
-        min-height: 180px !important;
+        height: 190px !important;
+        min-height: 190px !important;
+    }
+    .popup-layout-card_cover .popup-cover-img {
+        aspect-ratio: 1280 / 720 !important;
+        width: 100% !important;
+        height: auto !important;
+    }
+    .welcome-popup-body {
+        padding: 25px 20px !important;
+    }
+    .welcome-popup-actions {
+        flex-direction: column !important;
+    }
+    .welcome-popup-actions a,
+    .welcome-popup-actions button {
+        width: 100% !important;
+        text-align: center !important;
     }
 }
 </style>
 
-<div id="flash-card-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); z-index: 99999; backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.4s ease;">
-    <div id="flash-card" class="welcome-popup-box" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -40%) scale(0.9); background: #ffffff; width: 90%; max-width: <?php echo !empty($popup_image) ? '760px' : '460px'; ?>; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.1); overflow: hidden; z-index: 100000; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease; opacity: 0; display: flex; flex-direction: column;">
-        
-        <!-- Close button (Always positioned correctly) -->
-        <button onclick="closeFlashCard()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.9); border: none; color: #333; font-size: 26px; cursor: pointer; transition: all 0.2s; line-height: 1; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10;" onmouseover="this.style.background='#002147'; this.style.color='#fff';" onmouseout="this.style.background='rgba(255,255,255,0.9)'; this.style.color='#333';">&times;</button>
-        
-        <div style="display: flex; flex-direction: row; flex-wrap: wrap; width: 100%;">
-            
-            <?php if (!empty($popup_image)): ?>
-            <!-- Left Side Cover Image (Responsive) -->
-            <div class="welcome-popup-img" style="width: 45%; min-width: 280px; background: url('images/<?php echo $popup_image; ?>') no-repeat center center / cover; min-height: 320px;"></div>
-            <?php endif; ?>
-            
-            <!-- Right Side Text / Content -->
-            <div class="welcome-popup-body" style="flex: 1; min-width: 280px; padding: 45px 35px; display: flex; flex-direction: column; justify-content: center; background: #ffffff; color: #002147;">
-                <div style="background: #fdf2d0; width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 25px;">
-                    <i class="fas fa-bullhorn" style="font-size: 18px; color: #fdc800;"></i>
-                </div>
-                <h3 style="color: #002147; font-size: 26px; margin: 0 0 15px 0; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; font-family: inherit;"><?php echo htmlspecialchars($popup_title); ?></h3>
-                <p style="font-size: 15px; line-height: 1.7; color: #4b5563; margin: 0 0 30px 0; font-family: inherit; font-weight: 400;"><?php echo nl2br(htmlspecialchars($popup_desc)); ?></p>
-                <div style="display: flex; gap: 15px; align-items: center;">
-                    <a href="<?php echo htmlspecialchars($popup_btn_link); ?>" style="background: #002147; color: #ffffff; padding: 14px 32px; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 14px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 20px rgba(0, 33, 71, 0.15); text-align: center;" onmouseover="this.style.background='#fdc800'; this.style.color='#002147'; this.style.transform='translateY(-3px)';" onmouseout="this.style.background='#002147'; this.style.color='#ffffff'; this.style.transform='translateY(0)';" onclick="closeFlashCard()"><?php echo htmlspecialchars($popup_btn_text); ?></a>
-                    <button onclick="closeFlashCard()" style="background: transparent; color: #64748b; border: 1px solid #e2e8f0; padding: 14px 28px; border-radius: 50px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.background='#f8fafc'; this.style.color='#002147'; this.style.borderColor='#cbd5e1';" onmouseout="this.style.background='transparent'; this.style.color='#64748b'; this.style.borderColor='#e2e8f0';">Skip</button>
-                </div>
-            </div>
+<div id="flash-card-overlay" class="welcome-popup-overlay">
+    <div id="flash-card" class="welcome-popup-box popup-layout-<?php echo htmlspecialchars($popup_layout); ?>">
+        <!-- Floating Close Button -->
+        <button type="button" class="welcome-popup-close-btn" onclick="handlePopupClose()" aria-label="Close popup">&times;</button>
 
+        <div class="welcome-popup-scrollable">
+            <?php if ($popup_layout === 'card_cover'): ?>
+                <!-- ==================== LAYOUT 1: TOP COVER CARD ==================== -->
+                <?php if (!empty($popup_image)): ?>
+                    <div class="popup-cover-img" style="background-image: url('images/<?php echo htmlspecialchars($popup_image); ?>');">
+                        <?php if (!empty($popup_badge)): ?>
+                            <span style="position: absolute; bottom: 15px; left: 20px; z-index: 2; background: rgba(255, 255, 255, 0.95); color: <?php echo htmlspecialchars($popup_btn_color); ?>; font-weight: 800; font-size: 11px; letter-spacing: 0.8px; text-transform: uppercase; padding: 5px 14px; border-radius: 50px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                                <i class="fas fa-sparkles me-1 text-warning"></i><?php echo htmlspecialchars($popup_badge); ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                <?php else: ?>
+                    <div style="background: linear-gradient(135deg, <?php echo htmlspecialchars($popup_btn_color); ?>, #0284c7); padding: 30px 25px 20px 25px; color: #fff;">
+                        <?php if (!empty($popup_badge)): ?>
+                            <span class="badge bg-white text-dark rounded-pill px-3 py-1 mb-2 font-weight-bold" style="font-size: 11px; letter-spacing: 0.5px;">
+                                <?php echo htmlspecialchars($popup_badge); ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
+                <div class="welcome-popup-body" style="padding: 30px; background: #ffffff;">
+                    <?php if (empty($popup_image) && !empty($popup_badge)): ?>
+                    <?php elseif (!empty($popup_badge) && empty($popup_image)): ?>
+                    <?php endif; ?>
+                    
+                    <h3 style="color: #0f172a; font-size: 24px; font-weight: 800; margin: 0 0 12px 0; line-height: 1.25;">
+                        <?php echo htmlspecialchars($popup_title); ?>
+                    </h3>
+                    
+                    <div style="font-size: 15px; line-height: 1.7; color: #475569; margin-bottom: 25px; white-space: pre-line;">
+                        <?php echo htmlspecialchars($popup_desc); ?>
+                    </div>
+
+                    <div class="welcome-popup-actions" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <a href="<?php echo htmlspecialchars($popup_btn_link); ?>" 
+                           onclick="handlePopupClick('click_primary', this, event)"
+                           style="background: <?php echo htmlspecialchars($popup_btn_color); ?>; color: #ffffff; padding: 13px 30px; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 14px; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 8px 18px <?php echo htmlspecialchars($popup_btn_color); ?>33; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                            <span><?php echo htmlspecialchars($popup_btn_text); ?></span>
+                            <i class="fas fa-arrow-right fa-xs"></i>
+                        </a>
+
+                        <?php if (!empty($popup_btn_secondary_text)): ?>
+                            <a href="<?php echo htmlspecialchars($popup_btn_secondary_link); ?>" 
+                               onclick="handlePopupClick('click_secondary', this, event)"
+                               style="background: transparent; color: #475569; border: 1.5px solid #cbd5e1; padding: 12px 24px; border-radius: 50px; font-weight: 600; text-decoration: none; font-size: 14px; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center;">
+                                <?php echo htmlspecialchars($popup_btn_secondary_text); ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+            <?php elseif ($popup_layout === 'card_split'): ?>
+                <!-- ==================== LAYOUT 2: SPLIT CARD ==================== -->
+                <div class="popup-split-row">
+                    <?php if (!empty($popup_image)): ?>
+                        <div class="popup-split-img" style="background-image: url('images/<?php echo htmlspecialchars($popup_image); ?>');"></div>
+                    <?php endif; ?>
+
+                    <div class="popup-split-body welcome-popup-body" style="padding: 40px 32px; display: flex; flex-direction: column; justify-content: center; background: #ffffff;">
+                        <?php if (!empty($popup_badge)): ?>
+                            <div style="margin-bottom: 15px;">
+                                <span style="background: <?php echo htmlspecialchars($popup_btn_color); ?>15; color: <?php echo htmlspecialchars($popup_btn_color); ?>; font-weight: 700; font-size: 11px; letter-spacing: 0.8px; text-transform: uppercase; padding: 5px 14px; border-radius: 50px; display: inline-block;">
+                                    <?php echo htmlspecialchars($popup_badge); ?>
+                                </span>
+                            </div>
+                        <?php endif; ?>
+
+                        <h3 style="color: #0f172a; font-size: 24px; font-weight: 800; margin: 0 0 14px 0; line-height: 1.25;">
+                            <?php echo htmlspecialchars($popup_title); ?>
+                        </h3>
+
+                        <div style="font-size: 14px; line-height: 1.7; color: #475569; margin-bottom: 25px; white-space: pre-line;">
+                            <?php echo htmlspecialchars($popup_desc); ?>
+                        </div>
+
+                        <div class="welcome-popup-actions" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <a href="<?php echo htmlspecialchars($popup_btn_link); ?>" 
+                               onclick="handlePopupClick('click_primary', this, event)"
+                               style="background: <?php echo htmlspecialchars($popup_btn_color); ?>; color: #ffffff; padding: 13px 28px; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 14px; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 8px 18px <?php echo htmlspecialchars($popup_btn_color); ?>33; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                                <span><?php echo htmlspecialchars($popup_btn_text); ?></span>
+                                <i class="fas fa-arrow-right fa-xs"></i>
+                            </a>
+
+                            <?php if (!empty($popup_btn_secondary_text)): ?>
+                                <a href="<?php echo htmlspecialchars($popup_btn_secondary_link); ?>" 
+                                   onclick="handlePopupClick('click_secondary', this, event)"
+                                   style="background: transparent; color: #475569; border: 1.5px solid #cbd5e1; padding: 12px 22px; border-radius: 50px; font-weight: 600; text-decoration: none; font-size: 14px; transition: all 0.2s;">
+                                    <?php echo htmlspecialchars($popup_btn_secondary_text); ?>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+            <?php else: ?>
+                <!-- ==================== LAYOUT 3: MINIMAL CARD ==================== -->
+                <div class="welcome-popup-body" style="padding: 40px 32px; background: #ffffff; text-align: center;">
+                    <div style="background: <?php echo htmlspecialchars($popup_btn_color); ?>15; color: <?php echo htmlspecialchars($popup_btn_color); ?>; width: 60px; height: 60px; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                        <i class="fas fa-bullhorn" style="font-size: 24px;"></i>
+                    </div>
+
+                    <?php if (!empty($popup_badge)): ?>
+                        <div style="margin-bottom: 12px;">
+                            <span style="background: #f1f5f9; color: #334155; font-weight: 700; font-size: 11px; letter-spacing: 0.8px; text-transform: uppercase; padding: 4px 12px; border-radius: 50px; display: inline-block;">
+                                <?php echo htmlspecialchars($popup_badge); ?>
+                            </span>
+                        </div>
+                    <?php endif; ?>
+
+                    <h3 style="color: #0f172a; font-size: 24px; font-weight: 800; margin: 0 0 14px 0;">
+                        <?php echo htmlspecialchars($popup_title); ?>
+                    </h3>
+
+                    <div style="font-size: 15px; line-height: 1.7; color: #475569; margin-bottom: 28px; white-space: pre-line;">
+                        <?php echo htmlspecialchars($popup_desc); ?>
+                    </div>
+
+                    <div class="welcome-popup-actions" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                        <a href="<?php echo htmlspecialchars($popup_btn_link); ?>" 
+                           onclick="handlePopupClick('click_primary', this, event)"
+                           style="background: <?php echo htmlspecialchars($popup_btn_color); ?>; color: #ffffff; padding: 13px 30px; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 14px; box-shadow: 0 8px 18px <?php echo htmlspecialchars($popup_btn_color); ?>33;">
+                            <?php echo htmlspecialchars($popup_btn_text); ?>
+                        </a>
+
+                        <?php if (!empty($popup_btn_secondary_text)): ?>
+                            <a href="<?php echo htmlspecialchars($popup_btn_secondary_link); ?>" 
+                               onclick="handlePopupClick('click_secondary', this, event)"
+                               style="background: transparent; color: #475569; border: 1.5px solid #cbd5e1; padding: 12px 24px; border-radius: 50px; font-weight: 600; text-decoration: none; font-size: 14px;">
+                                <?php echo htmlspecialchars($popup_btn_secondary_text); ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    if (!sessionStorage.getItem("flashCardSeen")) {
-        setTimeout(function() {
-            var overlay = document.getElementById("flash-card-overlay");
-            var card = document.getElementById("flash-card");
-            if (overlay && card) {
-                overlay.style.display = "block";
-                overlay.offsetWidth; // force layout reflow
-                overlay.style.opacity = "1";
-                card.style.opacity = "1";
-                card.style.transform = "translate(-50%, -50%) scale(1)";
+(function() {
+    var frequency = "<?php echo addslashes($popup_frequency); ?>";
+    var delaySec = <?php echo $popup_delay; ?>;
+    var trackEndpoint = "<?php echo $SITE_URL; ?>/ajax_popup_track";
+
+    function shouldShowPopup() {
+        if (frequency === 'always') return true;
+        if (frequency === 'daily') {
+            var today = new Date().toISOString().slice(0, 10);
+            return localStorage.getItem("welcomePopupDate") !== today;
+        }
+        // Default: once per session
+        return !sessionStorage.getItem("welcomePopupSeen");
+    }
+
+    function markPopupSeen() {
+        sessionStorage.setItem("welcomePopupSeen", "true");
+        if (frequency === 'daily') {
+            var today = new Date().toISOString().slice(0, 10);
+            localStorage.setItem("welcomePopupDate", today);
+        }
+    }
+
+    // Analytics Tracker
+    window.trackPopupAnalytics = function(eventType, btnText, targetUrl) {
+        var payload = {
+            event_type: eventType,
+            button_text: btnText || '',
+            target_url: targetUrl || '',
+            page_url: window.location.pathname + window.location.search
+        };
+        try {
+            if (navigator.sendBeacon) {
+                var blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                navigator.sendBeacon(trackEndpoint, blob);
+            } else {
+                fetch(trackEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    keepalive: true
+                }).catch(function() {});
             }
-        }, 2200); // Trigger after 2.2 seconds
-    }
-});
+        } catch(e) {}
+    };
 
-function closeFlashCard() {
-    var overlay = document.getElementById("flash-card-overlay");
-    var card = document.getElementById("flash-card");
-    if (overlay && card) {
-        overlay.style.opacity = "0";
-        card.style.opacity = "0";
-        card.style.transform = "translate(-50%, -40%) scale(0.9)";
-        setTimeout(function() {
-            overlay.style.display = "none";
-        }, 400);
-    }
-    sessionStorage.setItem("flashCardSeen", "true");
-}
+    window.closeFlashCard = function() {
+        var overlay = document.getElementById("flash-card-overlay");
+        var card = document.getElementById("flash-card");
+        if (overlay && card) {
+            card.classList.remove('active');
+            overlay.style.opacity = "0";
+            setTimeout(function() {
+                overlay.style.display = "none";
+            }, 350);
+        }
+        markPopupSeen();
+    };
 
+    window.handlePopupClose = function() {
+        trackPopupAnalytics('close', 'Close Button', '#close');
+        closeFlashCard();
+    };
+
+    window.handlePopupClick = function(eventType, elem, ev) {
+        var text = (elem.innerText || elem.textContent || '').trim();
+        var href = elem.getAttribute('href') || '';
+        trackPopupAnalytics(eventType, text, href);
+
+        if (href === '#close' || href === 'javascript:void(0)' || href === 'javascript:;') {
+            if (ev) ev.preventDefault();
+            closeFlashCard();
+            return false;
+        }
+        // Allow regular navigation
+        markPopupSeen();
+    };
+
+    // Close on overlay backdrop click
+    document.addEventListener("DOMContentLoaded", function() {
+        var overlay = document.getElementById("flash-card-overlay");
+        var card = document.getElementById("flash-card");
+
+        if (overlay) {
+            overlay.addEventListener("click", function(e) {
+                if (e.target === overlay) {
+                    trackPopupAnalytics('close', 'Backdrop Click', '#backdrop');
+                    closeFlashCard();
+                }
+            });
+        }
+
+        if (shouldShowPopup()) {
+            setTimeout(function() {
+                if (overlay && card) {
+                    overlay.style.display = "block";
+                    overlay.offsetWidth; // force reflow
+                    overlay.style.opacity = "1";
+                    card.classList.add('active');
+                    // Track Impression Event
+                    trackPopupAnalytics('impression', '', window.location.pathname);
+                }
+            }, delaySec * 1000);
+        }
+    });
+})();
+</script>
+<?php endif; ?>
+
+<script>
 // Register Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -361,11 +703,9 @@ let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    // You can show a custom install button here if desired
     console.log('PWA install prompt captured');
 });
 </script>
-<?php endif; ?>
 
 <!-- Floating Contact Buttons (WhatsApp & Call) -->
 <div class="floating-contact-wrap">

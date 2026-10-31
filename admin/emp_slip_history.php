@@ -1,8 +1,8 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once '../connection.php';
-if (!isset($_SESSION['admin_id']) || $_SESSION['admin_type'] != 1) {
-    header("Location: login.php");
+if (!isset($_SESSION['admin_id']) || ($_SESSION['admin_type'] ?? null) != 1) {
+    header("Location: login");
     exit();
 }
 
@@ -24,7 +24,7 @@ include 'includes/header.php';
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-history me-2"></i>Salary Slip History</h2>
-        <a href="emp_salary_slips.php" class="btn btn-primary">
+        <a href="emp_salary_slips" class="btn btn-primary">
             <i class="fas fa-plus me-2"></i>Generate New Slips
         </a>
     </div>
@@ -72,7 +72,7 @@ include 'includes/header.php';
                 <button type="submit" class="btn btn-secondary w-100">Filter</button>
             </div>
             <div class="col-md-2 mb-2">
-                <a href="emp_slip_history.php" class="btn btn-outline-secondary w-100">Clear</a>
+                <a href="emp_slip_history" class="btn btn-outline-secondary w-100">Clear</a>
             </div>
         </form>
     </div>
@@ -106,10 +106,10 @@ include 'includes/header.php';
                             <td><strong>₹<?php echo number_format($row['final_salary'], 2); ?></strong></td>
                             <td>
                                 <div class="btn-group">
-                                    <a href="emp_view_slip.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-info" title="View" target="_blank">
+                                    <a href="emp_view_slip?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-info" title="View" target="_blank">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="emp_view_slip.php?id=<?php echo $row['id']; ?>&download=1" class="btn btn-sm btn-success" title="Download PDF" target="_blank">
+                                    <a href="emp_view_slip?id=<?php echo $row['id']; ?>&download=1" class="btn btn-sm btn-success" title="Download PDF" target="_blank">
                                         <i class="fas fa-file-pdf"></i>
                                     </a>
                                 </div>

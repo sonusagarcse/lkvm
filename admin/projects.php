@@ -21,7 +21,7 @@ if (isset($_GET['delete'])) {
         }
     }
     mysqli_query($con, "DELETE FROM projects WHERE id = $id");
-    echo "<script>window.location.href='projects.php?msg=deleted';</script>";
+    echo "<script>window.location.href='projects?msg=deleted';</script>";
 }
 
 // Handle Add/Edit
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_project'])) {
         }
     }
 
-    echo "<script>window.location.href='projects.php?msg=saved';</script>";
+    echo "<script>window.location.href='projects?msg=saved';</script>";
 }
 ?>
 
@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_project'])) {
                     <button class="btn btn-info btn-sm text-white flex-grow-1" onclick='editProject(<?php echo json_encode($row); ?>)'>
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <a href="projects.php?delete=<?php echo $row['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">
+                    <a href="projects?delete=<?php echo $row['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">
                         <i class="fas fa-trash"></i>
                     </a>
                 </div>

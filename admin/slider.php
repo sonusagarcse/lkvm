@@ -20,7 +20,7 @@ if (isset($_GET['delete'])) {
         if (function_exists('cache_delete')) {
             cache_delete('slider_images');
         }
-        echo "<script>window.location.href='slider.php?msg=deleted';</script>";
+        echo "<script>window.location.href='slider?msg=deleted';</script>";
     }
 }
 
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_slider'])) {
                     cache_delete('slider_images');
                 }
                 $stmt->close();
-                echo "<script>window.location.href='slider.php?msg=saved';</script>";
+                echo "<script>window.location.href='slider?msg=saved';</script>";
                 exit();
             } else {
                 $error = "Database Error occurred.";
@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_slider'])) {
                             <h5 class="card-title">' . htmlspecialchars($row['title']) . '</h5>
                             <p class="card-text text-muted">' . htmlspecialchars($row['subtitle']) . '</p>
                             <p class="card-text"><small class="text-muted">Added: ' . $row['date'] . '</small></p>
-                            <a href="slider.php?delete=' . $row['id'] . '" class="btn btn-danger btn-sm w-100" onclick="return confirm(\'Are you sure?\')"><i class="fas fa-trash"></i> Delete</a>
+                            <a href="slider?delete=' . $row['id'] . '" class="btn btn-danger btn-sm w-100" onclick="return confirm(\'Are you sure?\')"><i class="fas fa-trash"></i> Delete</a>
                         </div>
                     </div>
                 </div>';

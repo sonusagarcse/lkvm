@@ -11,7 +11,7 @@ if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     $query = "DELETE FROM admit_card WHERE id = $id";
     if (mysqli_query($con, $query)) {
-        echo "<script>window.location.href='admit_cards.php?msg=deleted';</script>";
+        echo "<script>window.location.href='admit_cards?msg=deleted';</script>";
     }
 }
 
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_admit'])) {
                   VALUES ('$mid', '$rollno', '$pid', '$cid', '$exam_session', '$exam', '$exam_date', '$exam_time', '$issue', '$date', '$status', '$bid')";
 
         if (mysqli_query($con, $query)) {
-            echo "<script>window.location.href='admit_cards.php?msg=generated';</script>";
+            echo "<script>window.location.href='admit_cards?msg=generated';</script>";
         } else {
             $error = "Database Error: " . mysqli_error($con);
         }
@@ -107,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['generate_admit'])) {
                                     </td>
                                     <td>
                                         <!-- Could add Print Link here -->
-                                        <a href='admit_cards.php?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
+                                        <a href='admit_cards?delete={$row['id']}' class='btn btn-sm btn-danger' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
                                     </td>
                                   </tr>";
                         }

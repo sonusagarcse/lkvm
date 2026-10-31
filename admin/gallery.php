@@ -36,7 +36,7 @@ if (isset($_GET['delete'])) {
         }
     }
 
-    echo "<script>window.location.href='gallery.php?msg=deleted&cid=$catFilter';</script>";
+    echo "<script>window.location.href='gallery?msg=deleted&cid=$catFilter';</script>";
 }
 
 // Handle Add Photo
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_photo'])) {
             if ($cid == 10 && function_exists('cache_delete'))
                 cache_delete('logos_photos_10');
 
-            echo "<script>window.location.href='gallery.php?msg=saved&cid=$cid';</script>";
+            echo "<script>window.location.href='gallery?msg=saved&cid=$cid';</script>";
         } else {
             die("Upload failed: " . e($upload_result['error']));
         }
@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_category'])) {
     $catName = mysqli_real_escape_string($con, $_POST['cat_name']);
     $date = date('d-m-Y');
     mysqli_query($con, "INSERT INTO photo_category (name, date, status) VALUES ('$catName', '$date', 1)");
-    echo "<script>window.location.href='gallery.php?msg=cat_saved';</script>";
+    echo "<script>window.location.href='gallery?msg=cat_saved';</script>";
 }
 
 // Fetch Categories
@@ -113,10 +113,10 @@ while ($r = mysqli_fetch_assoc($cQ))
                 ?>
             </button>
             <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="gallery.php">All Categories</a></li>
+                <li><a class="dropdown-item" href="gallery">All Categories</a></li>
                 <?php foreach ($cats as $c): ?>
                     <li><a class="dropdown-item"
-                            href="gallery.php?cid=<?php echo $c['id']; ?>"><?php echo $c['name']; ?></a></li>
+                            href="gallery?cid=<?php echo $c['id']; ?>"><?php echo $c['name']; ?></a></li>
                 <?php endforeach; ?>
             </ul>
         </div>
@@ -160,7 +160,7 @@ while ($r = mysqli_fetch_assoc($cQ))
                         <div class="card-body p-3">
                             <h6 class="card-title text-truncate" title="' . htmlspecialchars($row['title']) . '">' . (htmlspecialchars($row['title']) ?: 'Untitled') . '</h6>
                             <small class="text-muted d-block mb-2">' . htmlspecialchars($row['cat_name']) . '</small>
-                            <a href="gallery.php?delete=' . $row['id'] . '&cid=' . $catFilter . '" class="btn btn-danger btn-sm w-100" onclick="return confirm(\'Are you sure?\')"><i class="fas fa-trash"></i></a>
+                            <a href="gallery?delete=' . $row['id'] . '&cid=' . $catFilter . '" class="btn btn-danger btn-sm w-100" onclick="return confirm(\'Are you sure?\')"><i class="fas fa-trash"></i></a>
                         </div>
                     </div>
                 </div>';
