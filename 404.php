@@ -1,5 +1,16 @@
 <?php
 require_once 'connection.php';
+
+// Record suspicious 404 / probe attempt into firewall threat log
+if (function_exists('firewall_record_suspicious_hit')) {
+    firewall_record_suspicious_hit($con);
+}
+
+// Ensure proper 404 HTTP status header
+if (http_response_code() === 200) {
+    http_response_code(404);
+}
+
 $page_title = "404 - Page Not Found";
 ?>
 <!doctype html>

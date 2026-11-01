@@ -33,6 +33,7 @@ header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 300) . ' GMT');
                                         <?php include('section_projects.php'); ?>
                                         <?php include('section3.php'); ?>
                                         <?php include('section4.php'); ?>
+                                        <?php include('section_jobs.php'); ?>
                                         <?php include('section5.php'); ?>
 
                                         <?php include('section7.php'); ?>

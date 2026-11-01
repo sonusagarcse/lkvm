@@ -54,6 +54,10 @@ if (!$con) {
 
 mysqli_set_charset($con, "utf8");
 
+// Application Layer IP Firewall & Rapid URL Scanning Blocker
+require_once __DIR__ . '/security/firewall.php';
+firewall_check($con);
+
 // Fetch Global Settings (Cached)
 $settings = cache_remember('global_settings', function () use ($con) {
     if ($con) {

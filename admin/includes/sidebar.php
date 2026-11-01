@@ -211,6 +211,14 @@ $adminType = $_SESSION['admin_type'] ?? null;
         </li>
 
         <li class="nav-item">
+            <a href="jobs_manage"
+                class="nav-link <?php echo in_array($currentPage, ['jobs_manage', 'jobs_manage.php']) ? 'active' : ''; ?>">
+                <i class="fas fa-briefcase"></i>
+                <span>Job Openings</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
             <a href="applications"
                 class="nav-link <?php echo $currentPage == 'applications' ? 'active' : ''; ?>">
                 <i class="fas fa-user-tie"></i>
@@ -248,6 +256,14 @@ $adminType = $_SESSION['admin_type'] ?? null;
                 class="nav-link <?php echo $currentPage == 'visitors' ? 'active' : ''; ?>">
                 <i class="fas fa-chart-line"></i>
                 <span>Visitors</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="firewall_manage"
+                class="nav-link <?php echo in_array($currentPage, ['firewall_manage', 'firewall_manage.php']) ? 'active' : ''; ?>">
+                <i class="fas fa-shield-alt text-warning"></i>
+                <span>IP Firewall & Security</span>
             </a>
         </li>
 
