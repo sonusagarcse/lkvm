@@ -5,6 +5,18 @@
 
 <!-- Dynamic SEO Tags -->
 <base href="<?php echo $SITE_URL; ?>/">
+<?php
+// Google AdSense Configuration
+$current_page_file = basename($_SERVER['PHP_SELF'] ?? '');
+$is_homepage = ($current_page_file === 'index.php' || $current_page_file === '');
+?>
+<?php if (!$is_homepage): ?>
+<!-- Google AdSense (Loaded on all pages except Home Page) -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2574317387237006" crossorigin="anonymous"></script>
+<?php else: ?>
+<!-- Google AdSense Account Meta Tag for Home Page Ownership Verification -->
+<meta name="google-adsense-account" content="ca-pub-2574317387237006">
+<?php endif; ?>
 <?php if (empty($custom_seo)): ?>
 <title><?php echo(isset($page_title) ? htmlspecialchars($page_title) . " | " : "") . htmlspecialchars($SITE_NAME); ?></title>
 <meta name="description" content="<?php echo htmlspecialchars($settings['meta_description'] ?? ($SITE_NAME . ' provides classes for computer education and vocational training.')); ?>">

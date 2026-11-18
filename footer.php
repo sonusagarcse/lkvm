@@ -73,26 +73,15 @@ $EMAIL_ID = $CONTACT_EMAIL ?? $settings['email'] ?? 'lkvmimamganj@gmail.com';
                     <h3 class="widgettitle">Useful Links</h3>
                     <div class="menu-explore-courses-container">
                         <ul id="menu-explore-courses" class="menu">
-                            <li id="menu-item-2046"
-                                class="menu-item menu-item-type-post_type menu-item-object-lp_course menu-item-2046"><a
-                                    href="<?php echo $SITE_URL; ?>/privacy_policy">Privacy Policy</a></li>
-                            <li id="menu-item-2046"
-                                class="menu-item menu-item-type-post_type menu-item-object-lp_course menu-item-2046"><a
-                                    href="<?php echo $SITE_URL; ?>/terms_conditions">Terms & Conditions</a></li>
-                            <li id="menu-item-2046"
-                                class="menu-item menu-item-type-post_type menu-item-object-lp_course menu-item-2046"><a
-                                    href="<?php echo $SITE_URL; ?>/shipping_policy">Shipping Policy</a></li>
-                            <li id="menu-item-2046"
-                                class="menu-item menu-item-type-post_type menu-item-object-lp_course menu-item-2046"><a
-                                    href="<?php echo $SITE_URL; ?>/refund">Refund & Cancellation </a></li>
-
-                            <!--<li id="menu-item-2046" class="menu-item menu-item-type-post_type menu-item-object-lp_course menu-item-2046"><a href="<?php echo $SITE_URL; ?>/branch" target="_blank">Center Login</a></li>-->
-                            <li id="menu-item-2048"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-2048"><a
-                                    href="<?php echo $SITE_URL; ?>/admin" target="_blank">Admin Login</a></li>
-                            <li id="menu-item-2049"
-                                class="menu-item menu-item-type-post_type menu-item-object-page menu-item-2049"><a
-                                    href="<?php echo $SITE_URL; ?>/coordinator" target="_blank">Centre Coordinator Login</a></li>
+                            <li class="menu-item"><a href="<?php echo $SITE_URL; ?>/privacy_policy">Privacy Policy</a></li>
+                            <li class="menu-item"><a href="<?php echo $SITE_URL; ?>/terms_conditions">Terms &amp; Conditions</a></li>
+                            <li class="menu-item"><a href="<?php echo $SITE_URL; ?>/disclaimer">Disclaimer</a></li>
+                            <li class="menu-item"><a href="<?php echo $SITE_URL; ?>/shipping_policy">Shipping Policy</a></li>
+                            <li class="menu-item"><a href="<?php echo $SITE_URL; ?>/refund">Refund &amp; Cancellation</a></li>
+                            <li class="menu-item"><a href="<?php echo $SITE_URL; ?>/contact_us">Contact Us</a></li>
+                            <li class="menu-item"><a href="<?php echo $SITE_URL; ?>/sitemap.xml" target="_blank">XML Sitemap</a></li>
+                            <li class="menu-item"><a href="<?php echo $SITE_URL; ?>/admin" target="_blank">Admin Login</a></li>
+                            <li class="menu-item"><a href="<?php echo $SITE_URL; ?>/coordinator" target="_blank">Centre Coordinator Login</a></li>
                         </ul>
                     </div>
                 </div>
@@ -806,4 +795,43 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 });
+</script>
+
+<!-- Google AdSense & Cookie Consent Notice -->
+<div id="lkvmCookieBanner" style="display: none; position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 820px; background: #002147; color: #ffffff; padding: 14px 22px; z-index: 999999; box-shadow: 0 10px 30px rgba(0,0,0,0.35); border-radius: 14px; border: 1px solid rgba(253, 200, 0, 0.45); font-family: Roboto, -apple-system, sans-serif;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+        <div style="flex: 1 1 420px; font-size: 14px; line-height: 1.5; color: #f8fafc;">
+            <i class="fas fa-cookie-bite" style="color: #fdc800; font-size: 16px; margin-right: 8px;"></i>
+            We use cookies to improve your experience and show relevant ads. By browsing, you agree to our 
+            <a href="<?php echo $SITE_URL; ?>/privacy_policy" style="color: #fdc800; text-decoration: underline; font-weight: 700;">Privacy Policy</a>.
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+            <a href="<?php echo $SITE_URL; ?>/privacy_policy" style="display: inline-block; background: transparent; color: #ffffff !important; border: 1px solid rgba(255,255,255,0.45); padding: 8px 16px; border-radius: 50px; font-size: 13px; font-weight: 600; text-decoration: none; line-height: 1.2;">Privacy Policy</a>
+            <button type="button" onclick="acceptLkvmCookies();" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #fdc800 !important; color: #002147 !important; border: none !important; padding: 9px 24px !important; border-radius: 50px !important; font-size: 14px !important; font-weight: 800 !important; cursor: pointer !important; line-height: 1.2 !important; box-shadow: 0 2px 10px rgba(253,200,0,0.35) !important; outline: none !important;">
+                <i class="fas fa-check" style="font-size: 12px; color: #002147 !important; font-weight: 900 !important;"></i>
+                <span style="color: #002147 !important; font-weight: 800 !important; font-size: 14px !important;">Accept</span>
+            </button>
+        </div>
+    </div>
+</div>
+<script>
+function acceptLkvmCookies() {
+    try {
+        localStorage.setItem('lkvm_cookie_consent', 'accepted');
+        var banner = document.getElementById('lkvmCookieBanner');
+        if (banner) {
+            banner.style.transition = 'all 0.3s ease';
+            banner.style.opacity = '0';
+            setTimeout(function() { banner.style.display = 'none'; }, 300);
+        }
+    } catch(e) {}
+}
+(function() {
+    try {
+        if (!localStorage.getItem('lkvm_cookie_consent')) {
+            var b = document.getElementById('lkvmCookieBanner');
+            if (b) b.style.display = 'block';
+        }
+    } catch(e) {}
+})();
 </script>

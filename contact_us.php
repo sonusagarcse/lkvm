@@ -159,6 +159,11 @@ else { ?>
 
 																<form action="code/contact" method="post"
 																	class="wpcf7-form init" data-status="init">
+																	<?php echo function_exists('csrf_field') ? csrf_field() : ''; ?>
+																	<!-- Anti-bot honeypot trap -->
+																	<div style="display:none !important;" aria-hidden="true">
+																		<input type="text" name="contact_hp_field" value="" tabindex="-1" autocomplete="off">
+																	</div>
 
 																	<div class="contact-us-form">
 																		<div class="row">

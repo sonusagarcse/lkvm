@@ -8,6 +8,9 @@ RewriteRule ^blog/category/([a-zA-Z0-9_-]+)/?$ blog.php?category=$1 [QSA,L]
 RewriteRule ^blog/([a-zA-Z0-9_-]+)/?$ blog_detail.php?slug=$1 [QSA,L]
 RewriteRule ^blog/?$ blog.php [QSA,L]
 
+# Sitemap Routing
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
 # Let Admin Directory handle its own rules without root interference
 RewriteCond %{REQUEST_URI} ^/(?:lkvm/)?admin [NC]
 RewriteRule ^ - [L]

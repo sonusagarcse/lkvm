@@ -36,9 +36,26 @@ function slugify($text) {
     return empty($text) ? 'post-' . time() : $text;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_blog'])) {
+// Initialize form variables with existing database values or previous POST values
+$title = $_POST['title'] ?? $blog['title'];
+$slug = $_POST['slug'] ?? $blog['slug'];
+$category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : intval($blog['category_id']);
+$author_name = $_POST['author_name'] ?? $blog['author_name'];
+$excerpt = $_POST['excerpt'] ?? $blog['excerpt'];
+$content = $_POST['content'] ?? $blog['content'];
+$tags = $_POST['tags'] ?? $blog['tags'];
+$status = isset($_POST['status']) ? 1 : (($_SERVER['REQUEST_METHOD'] === 'POST') ? 0 : intval($blog['status']));
+
+$meta_title = $_POST['meta_title'] ?? $blog['meta_title'];
+$meta_description = $_POST['meta_description'] ?? $blog['meta_description'];
+$meta_keywords = $_POST['meta_keywords'] ?? $blog['meta_keywords'];
+$canonical_url = $_POST['canonical_url'] ?? $blog['canonical_url'];
+$schema_type = $_POST['schema_type'] ?? ($blog['schema_type'] ?: 'BlogPosting');
+$published_at = $_POST['published_at'] ?? $blog['published_at'];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['save_blog']) || isset($_POST['title']))) {
     if (!verify_csrf_token()) {
-        die("CSRF validation failed.");
+        die("CSRF validation failed. Please refresh the page and try again.");
     }
 
     $title = trim($_POST['title'] ?? '');
@@ -56,14 +73,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_blog'])) {
     $meta_keywords = trim($_POST['meta_keywords'] ?? '');
     $canonical_url = trim($_POST['canonical_url'] ?? '');
     $schema_type = trim($_POST['schema_type'] ?? 'BlogPosting');
-    $published_at = !empty($_POST['published_at']) ? $_POST['published_at'] : $blog['published_at'];
+    $published_at_raw = !empty($_POST['published_at']) ? $_POST['published_at'] : $blog['published_at'];
+    $published_at_db = date('Y-m-d H:i:s', strtotime($published_at_raw));
+
+    // Content check
+    $content_text = trim(strip_tags($content, '<img><iframe><video><audio>'));
 
     if (empty($title)) {
         $error = "Blog title is required.";
     } elseif ($category_id <= 0) {
         $error = "Please select a valid blog category.";
-    } elseif (empty($content)) {
-        $error = "Blog content cannot be empty.";
+    } elseif (empty($content) || (empty($content_text) && strpos($content, '<img') === false)) {
+        $error = "Blog content cannot be empty. Please enter your article body before saving.";
     } else {
         $slug = empty($slug) ? slugify($title) : slugify($slug);
 
@@ -78,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_blog'])) {
         $stmt_check->close();
 
         if (empty($meta_title)) {
-            $meta_title = $title . ' | ' . $SITE_NAME;
+            $meta_title = $title . ' | ' . ($SITE_NAME ?? 'LKVM');
         }
         if (empty($meta_description)) {
             $meta_description = !empty($excerpt) ? substr($excerpt, 0, 160) : substr(strip_tags($content), 0, 160);
@@ -86,11 +107,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_blog'])) {
 
         $featured_image = $blog['featured_image'];
 
-        // Handle Image Upload
+        // Handle Featured Image Upload with Automatic Space-Saving Compression
         if (isset($_FILES['featured_image']) && $_FILES['featured_image']['error'] !== UPLOAD_ERR_NO_FILE) {
             $allowed_exts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
             $allowed_mimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-            $upload_res = secure_upload_file($_FILES['featured_image'], $uploadDir, $allowed_exts, $allowed_mimes, 3145728);
+            // Compress and resize image (max 1280x1280, 80% quality, modern WebP format) to save ~80-95% space
+            $upload_res = secure_upload_file($_FILES['featured_image'], $uploadDir, $allowed_exts, $allowed_mimes, 10485760, true, 1280, 1280, 80, 'blog_cover_');
             if ($upload_res['success']) {
                 if (!empty($featured_image) && file_exists($uploadDir . $featured_image)) {
                     @unlink($uploadDir . $featured_image);
@@ -101,12 +123,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_blog'])) {
             }
         }
 
-        // Handle Image Removal
+        // Handle Image Removal Checkbox
         if (isset($_POST['remove_image']) && $_POST['remove_image'] == '1') {
             if (!empty($featured_image) && file_exists($uploadDir . $featured_image)) {
                 @unlink($uploadDir . $featured_image);
             }
             $featured_image = '';
+        }
+
+        // Automatically compress any inline base64 images that were pasted into the editor
+        if (empty($error)) {
+            $content = extract_and_compress_base64_images($content, $uploadDir, $SITE_URL, 'blog_inline_');
         }
 
         if (empty($error)) {
@@ -147,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_blog'])) {
                     $canonical_url,
                     $schema_type,
                     $status,
-                    $published_at,
+                    $published_at_db,
                     $id
                 );
 
@@ -166,13 +193,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_blog'])) {
     }
 }
 
-// Fetch categories
+// Fetch categories safely into array
+$categories = [];
 $cats_q = mysqli_query($con, "SELECT id, name FROM blog_categories WHERE status = 1 ORDER BY name ASC");
+if ($cats_q) {
+    while ($cat = mysqli_fetch_assoc($cats_q)) {
+        $categories[] = $cat;
+    }
+}
 
 require_once 'includes/header.php';
 ?>
 
-<!-- Summernote Lite Editor CSS (via High-Speed Cloudflare CDN) -->
+<!-- Summernote Lite Editor CSS -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.css" rel="stylesheet">
 <style>
 .note-editor.note-frame {
@@ -196,7 +229,7 @@ require_once 'includes/header.php';
     font-size: 15.5px !important;
     line-height: 1.75 !important;
     color: #1e293b !important;
-    min-height: 360px !important;
+    min-height: 380px !important;
     background: #ffffff !important;
 }
 </style>
@@ -207,17 +240,17 @@ require_once 'includes/header.php';
             <ol class="breadcrumb mb-1">
                 <li class="breadcrumb-item"><a href="index">Dashboard</a></li>
                 <li class="breadcrumb-item"><a href="blog_manage">Blog System</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Edit Blog #<?php echo $blog['id']; ?></li>
+                <li class="breadcrumb-item active" aria-current="page">Edit Article #<?php echo $id; ?></li>
             </ol>
         </nav>
         <h3 class="fw-bold mb-0 text-dark">
-            <i class="fas fa-edit text-primary me-2"></i>Edit Article: <?php echo htmlspecialchars($blog['title']); ?>
+            <i class="fas fa-edit text-primary me-2"></i>Edit Blog Article
         </h3>
-        <p class="text-muted small mb-0">Update content, fine-tune SEO metadata, and optimize reader engagement</p>
+        <p class="text-muted small mb-0">Modify content, cover image, and enhance SEO settings</p>
     </div>
-    <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end">
-        <a href="../blog/<?php echo $blog['slug']; ?>" target="_blank" class="btn btn-outline-info rounded-pill px-3 shadow-sm">
-            <i class="fas fa-external-link-alt me-1"></i> View Live
+    <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end gap-2">
+        <a href="<?php echo $SITE_URL; ?>/blog/<?php echo urlencode($blog['slug']); ?>" target="_blank" class="btn btn-outline-info rounded-pill px-3 shadow-sm">
+            <i class="fas fa-external-link-alt me-1"></i> Preview Live
         </a>
         <a href="blog_manage" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
             <i class="fas fa-arrow-left me-1"></i> Back to Blog List
@@ -225,7 +258,7 @@ require_once 'includes/header.php';
     </div>
 </div>
 
-<?php if ($error): ?>
+<?php if (!empty($error)): ?>
     <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm" role="alert">
         <i class="fas fa-exclamation-triangle me-2"></i><?php echo htmlspecialchars($error); ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -242,14 +275,14 @@ require_once 'includes/header.php';
                     <!-- Title -->
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-6">Article Title <span class="text-danger">*</span></label>
-                        <input type="text" name="title" id="blog_title" class="form-control form-control-lg fw-bold" placeholder="Enter an engaging headline..." value="<?php echo htmlspecialchars($blog['title']); ?>" required>
+                        <input type="text" name="title" id="blog_title" class="form-control form-control-lg fw-bold" placeholder="Enter an engaging headline..." value="<?php echo htmlspecialchars($title); ?>" required>
                     </div>
 
                     <!-- Slug Display & Editor -->
                     <div class="mb-4 p-3 bg-light rounded-3 border d-flex align-items-center gap-2 flex-wrap">
                         <span class="small fw-bold text-muted"><i class="fas fa-link me-1"></i>Permalink:</span>
                         <span class="small text-muted font-monospace"><?php echo $SITE_URL; ?>/blog/</span>
-                        <input type="text" name="slug" id="blog_slug" class="form-control form-control-sm font-monospace flex-grow-1" style="max-width: 320px;" value="<?php echo htmlspecialchars($blog['slug']); ?>" required>
+                        <input type="text" name="slug" id="blog_slug" class="form-control form-control-sm font-monospace flex-grow-1" style="max-width: 320px;" value="<?php echo htmlspecialchars($slug); ?>" required>
                         <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="regenerateSlug()" title="Regenerate from Title"><i class="fas fa-sync-alt"></i></button>
                     </div>
 
@@ -259,13 +292,16 @@ require_once 'includes/header.php';
                             <label class="form-label fw-bold mb-0">Short Excerpt / Summary</label>
                             <span class="small text-muted" id="excerpt_counter">0 / 250</span>
                         </div>
-                        <textarea name="excerpt" id="blog_excerpt" class="form-control" rows="3" placeholder="A captivating summary..."><?php echo htmlspecialchars($blog['excerpt'] ?? ''); ?></textarea>
+                        <textarea name="excerpt" id="blog_excerpt" class="form-control" rows="3" placeholder="A captivating summary..."><?php echo htmlspecialchars($excerpt); ?></textarea>
                     </div>
 
                     <!-- Rich Text Editor -->
                     <div class="mb-2">
-                        <label class="form-label fw-bold">Full Content Body <span class="text-danger">*</span></label>
-                        <textarea name="content" id="blog_content" class="form-control" rows="14" style="width: 100%; min-height: 380px; font-family: inherit; font-size: 15px; line-height: 1.6;"><?php echo htmlspecialchars($blog['content'] ?? ''); ?></textarea>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-bold mb-0">Full Content Body <span class="text-danger">*</span></label>
+                            <span class="small text-muted" id="upload_status"></span>
+                        </div>
+                        <textarea name="content" id="blog_content" class="form-control" rows="14" style="width: 100%; min-height: 380px; font-family: inherit; font-size: 15px; line-height: 1.6;"><?php echo htmlspecialchars($content); ?></textarea>
                     </div>
                 </div>
             </div>
@@ -290,13 +326,13 @@ require_once 'includes/header.php';
                             <div class="d-flex align-items-center gap-2 mb-1" style="font-size: 13px; color: #202124;">
                                 <div style="width: 18px; height: 18px; border-radius: 50%; background: #002147; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: bold;">L</div>
                                 <span style="color: #202124;"><?php echo parse_url($SITE_URL, PHP_URL_HOST); ?></span>
-                                <span style="color: #5f6368;">› blog › <span id="serp_slug_preview"><?php echo htmlspecialchars($blog['slug']); ?></span></span>
+                                <span style="color: #5f6368;">› blog › <span id="serp_slug_preview"><?php echo htmlspecialchars($slug); ?></span></span>
                             </div>
                             <div id="serp_title_preview" style="color: #1a0dab; font-size: 19px; line-height: 1.3; font-weight: 400; cursor: pointer; text-decoration: none;">
-                                <?php echo htmlspecialchars($blog['meta_title'] ?: $blog['title']); ?>
+                                <?php echo htmlspecialchars($meta_title ?: $title); ?>
                             </div>
                             <div id="serp_desc_preview" style="color: #4d5156; font-size: 14px; line-height: 1.58; margin-top: 3px;">
-                                <?php echo htmlspecialchars($blog['meta_description'] ?: $blog['excerpt'] ?: 'Description snippet will appear here.'); ?>
+                                <?php echo htmlspecialchars($meta_description ?: ($excerpt ?: 'Article description will appear here in Google search results.')); ?>
                             </div>
                         </div>
                     </div>
@@ -308,8 +344,8 @@ require_once 'includes/header.php';
                                 <label class="form-label fw-bold mb-0">SEO Meta Title</label>
                                 <span class="small font-monospace" id="meta_title_counter">0 / 60 characters</span>
                             </div>
-                            <input type="text" name="meta_title" id="meta_title" class="form-control" placeholder="Targeted SEO Title for browser tabs & Google search..." value="<?php echo htmlspecialchars($blog['meta_title'] ?? ''); ?>">
-                            <div class="form-text">Recommended: 50 - 60 characters.</div>
+                            <input type="text" name="meta_title" id="meta_title" class="form-control" placeholder="Targeted SEO Title for browser tabs & Google search..." value="<?php echo htmlspecialchars($meta_title); ?>">
+                            <div class="form-text">Recommended: 50 - 60 characters. Leave blank to auto-use article title.</div>
                         </div>
 
                         <!-- Meta Description -->
@@ -318,14 +354,14 @@ require_once 'includes/header.php';
                                 <label class="form-label fw-bold mb-0">SEO Meta Description</label>
                                 <span class="small font-monospace" id="meta_desc_counter">0 / 160 characters</span>
                             </div>
-                            <textarea name="meta_description" id="meta_description" class="form-control" rows="3" placeholder="Concise summary shown under headline on Google search results..."><?php echo htmlspecialchars($blog['meta_description'] ?? ''); ?></textarea>
-                            <div class="form-text">Recommended: 140 - 160 characters.</div>
+                            <textarea name="meta_description" id="meta_description" class="form-control" rows="3" placeholder="Concise summary shown under headline on Google search results..."><?php echo htmlspecialchars($meta_description); ?></textarea>
+                            <div class="form-text">Recommended: 140 - 160 characters. Highlight keywords and a clear call to action.</div>
                         </div>
 
                         <!-- Meta Keywords -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Focus & Meta Keywords</label>
-                            <input type="text" name="meta_keywords" class="form-control" placeholder="e.g. computer training, bihar education, kyp" value="<?php echo htmlspecialchars($blog['meta_keywords'] ?? ''); ?>">
+                            <input type="text" name="meta_keywords" class="form-control" placeholder="e.g. computer training, bihar education, kyp" value="<?php echo htmlspecialchars($meta_keywords); ?>">
                             <div class="form-text">Comma-separated keywords.</div>
                         </div>
 
@@ -333,18 +369,18 @@ require_once 'includes/header.php';
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Schema.org Structured Data Type</label>
                             <select name="schema_type" class="form-select">
-                                <option value="BlogPosting" <?php echo ($blog['schema_type'] ?? '') === 'BlogPosting' ? 'selected' : ''; ?>>BlogPosting (Recommended)</option>
-                                <option value="Article" <?php echo ($blog['schema_type'] ?? '') === 'Article' ? 'selected' : ''; ?>>Article</option>
-                                <option value="NewsArticle" <?php echo ($blog['schema_type'] ?? '') === 'NewsArticle' ? 'selected' : ''; ?>>NewsArticle</option>
-                                <option value="EducationalOccupationalCredential" <?php echo ($blog['schema_type'] ?? '') === 'EducationalOccupationalCredential' ? 'selected' : ''; ?>>Educational Article</option>
+                                <option value="BlogPosting" <?php echo ($schema_type === 'BlogPosting') ? 'selected' : ''; ?>>BlogPosting (Recommended)</option>
+                                <option value="Article" <?php echo ($schema_type === 'Article') ? 'selected' : ''; ?>>Article</option>
+                                <option value="NewsArticle" <?php echo ($schema_type === 'NewsArticle') ? 'selected' : ''; ?>>NewsArticle</option>
+                                <option value="EducationalOccupationalCredential" <?php echo ($schema_type === 'EducationalOccupationalCredential') ? 'selected' : ''; ?>>Educational Article</option>
                             </select>
-                            <div class="form-text">Powers Google Rich Snippets.</div>
+                            <div class="form-text">Powers Google Rich Snippets & knowledge panels.</div>
                         </div>
 
                         <!-- Canonical URL -->
                         <div class="col-12">
                             <label class="form-label fw-bold">Canonical URL (Advanced)</label>
-                            <input type="url" name="canonical_url" class="form-control" placeholder="Defaults to this article URL automatically" value="<?php echo htmlspecialchars($blog['canonical_url'] ?? ''); ?>">
+                            <input type="url" name="canonical_url" class="form-control" placeholder="Defaults to this article URL automatically" value="<?php echo htmlspecialchars($canonical_url); ?>">
                             <div class="form-text">Only needed if this article was syndicated from another canonical source.</div>
                         </div>
                     </div>
@@ -354,20 +390,18 @@ require_once 'includes/header.php';
 
         <!-- Right Sidebar Settings Column -->
         <div class="col-lg-4">
+            <!-- Publishing & Status Box -->
             <div class="card border-0 shadow-sm rounded-4 mb-4 sticky-top" style="top: 20px; z-index: 5;">
-                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header bg-white border-bottom py-3">
                     <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-sliders-h text-primary me-2"></i>Publishing Settings</h6>
-                    <span class="badge bg-light text-muted"><i class="fas fa-eye me-1"></i><?php echo number_format($blog['views']); ?> Reads</span>
                 </div>
                 <div class="card-body p-4">
                     <!-- Status Toggle -->
                     <div class="mb-4">
                         <label class="form-label fw-bold">Post Status</label>
                         <div class="form-check form-switch mt-1">
-                            <input class="form-check-input" type="checkbox" name="status" id="blog_status" value="1" <?php echo $blog['status'] == 1 ? 'checked' : ''; ?> style="width: 50px; height: 26px;">
-                            <label class="form-check-label fw-bold ms-2" for="blog_status" id="status_label">
-                                <?php echo $blog['status'] == 1 ? 'Published Live' : 'Saved as Draft'; ?>
-                            </label>
+                            <input class="form-check-input" type="checkbox" name="status" id="blog_status" value="1" <?php echo ($status === 1) ? 'checked' : ''; ?> style="width: 50px; height: 26px;">
+                            <label class="form-check-label fw-bold ms-2" for="blog_status" id="status_label"><?php echo ($status === 1) ? 'Published Live' : 'Saved as Draft'; ?></label>
                         </div>
                     </div>
 
@@ -377,33 +411,33 @@ require_once 'includes/header.php';
                             <label class="form-label fw-bold mb-0">Category <span class="text-danger">*</span></label>
                             <a href="blog_categories" target="_blank" class="small text-primary text-decoration-none">+ New Category</a>
                         </div>
-                        <select name="category_id" class="form-select" required>
+                        <select name="category_id" id="blog_category" class="form-select" required>
                             <option value="">-- Choose Category --</option>
-                            <?php while ($cat = mysqli_fetch_assoc($cats_q)): ?>
-                                <option value="<?php echo $cat['id']; ?>" <?php echo $blog['category_id'] == $cat['id'] ? 'selected' : ''; ?>>
+                            <?php foreach ($categories as $cat): ?>
+                                <option value="<?php echo $cat['id']; ?>" <?php echo ($category_id == $cat['id']) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($cat['name']); ?>
                                 </option>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </select>
                     </div>
 
                     <!-- Author Name -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">Author Name</label>
-                        <input type="text" name="author_name" class="form-control" value="<?php echo htmlspecialchars($blog['author_name'] ?? 'LKVM Editorial'); ?>" required>
+                        <input type="text" name="author_name" class="form-control" value="<?php echo htmlspecialchars($author_name); ?>" required>
                     </div>
 
                     <!-- Tags -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">Tags</label>
-                        <input type="text" name="tags" class="form-control" placeholder="e.g. Technology, Students, KYP" value="<?php echo htmlspecialchars($blog['tags'] ?? ''); ?>">
+                        <input type="text" name="tags" class="form-control" placeholder="e.g. Technology, Students, KYP" value="<?php echo htmlspecialchars($tags); ?>">
                         <div class="form-text">Comma-separated tags for filtering & search.</div>
                     </div>
 
                     <!-- Publication Date -->
                     <div class="mb-4">
                         <label class="form-label fw-bold">Publish Date & Time</label>
-                        <input type="datetime-local" name="published_at" class="form-control" value="<?php echo date('Y-m-d\TH:i', strtotime($blog['published_at'] ?? 'now')); ?>">
+                        <input type="datetime-local" name="published_at" class="form-control" value="<?php echo date('Y-m-d\TH:i', strtotime($published_at ?: 'now')); ?>">
                     </div>
 
                     <!-- Featured Image Upload -->
@@ -431,7 +465,7 @@ require_once 'includes/header.php';
 
                     <!-- Action Buttons -->
                     <div class="d-grid gap-2">
-                        <button type="submit" name="save_blog" class="btn btn-primary rounded-pill py-2 fw-bold shadow-sm">
+                        <button type="submit" name="save_blog" id="btnUpdate" class="btn btn-primary rounded-pill py-2 fw-bold shadow-sm">
                             <i class="fas fa-save me-2"></i> Update Blog Post
                         </button>
                         <a href="blog_manage" class="btn btn-light rounded-pill py-2">Cancel</a>
@@ -445,32 +479,100 @@ require_once 'includes/header.php';
 <!-- Summernote Lite Script (via Cloudflare CDN) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.js"></script>
 <script>
-(function initEditor() {
-    function setupSummernote() {
-        if (window.jQuery && typeof jQuery.fn.summernote === 'function') {
-            $('#blog_content').summernote({
-                placeholder: 'Write your comprehensive blog article here...',
-                tabsize: 2,
-                height: 400,
-                toolbar: [
-                    ['style', ['style']],
-                    ['font', ['bold', 'italic', 'underline', 'clear']],
-                    ['color', ['color']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['table', ['table']],
-                    ['insert', ['link', 'picture', 'video']],
-                    ['view', ['fullscreen', 'codeview', 'help']]
-                ]
-            });
-        } else {
-            setTimeout(setupSummernote, 60);
-        }
+// Initialize Summernote safely
+function initSummernoteEditor() {
+    if (window.jQuery && typeof jQuery.fn.summernote === 'function') {
+        $('#blog_content').summernote({
+            placeholder: 'Write your comprehensive blog article here...',
+            tabsize: 2,
+            height: 420,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                ['fontname', ['fontname']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['table', ['table']],
+                ['insert', ['link', 'picture', 'video', 'hr']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+            ],
+            callbacks: {
+                onImageUpload: function(files) {
+                    for (let i = 0; i < files.length; i++) {
+                        uploadEditorImage(files[i]);
+                    }
+                },
+                onPaste: function(e) {
+                    const clipboardData = e.originalEvent.clipboardData || window.clipboardData;
+                    if (clipboardData && clipboardData.items) {
+                        for (let i = 0; i < clipboardData.items.length; i++) {
+                            const item = clipboardData.items[i];
+                            if (item.type && item.type.indexOf("image") !== -1) {
+                                const file = item.getAsFile();
+                                if (file) {
+                                    uploadEditorImage(file);
+                                    e.preventDefault();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        setTimeout(initSummernoteEditor, 50);
     }
-    setupSummernote();
-})();
+}
+
+// Upload inline Summernote image to server instead of massive Base64
+function uploadEditorImage(file) {
+    const data = new FormData();
+    data.append("image", file);
+    const csrfToken = document.querySelector('input[name="csrf_token"]');
+    if (csrfToken) {
+        data.append("csrf_token", csrfToken.value);
+    }
+
+    const saveStatus = document.getElementById('upload_status');
+    if (saveStatus) saveStatus.innerText = 'Compressing & uploading image...';
+
+    fetch('ajax_blog_image.php', {
+        method: 'POST',
+        body: data
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res && res.success) {
+            $('#blog_content').summernote('insertImage', res.url, function($img) {
+                $img.addClass('img-fluid rounded shadow-sm my-3');
+            });
+            if (saveStatus) {
+                let savingsText = '';
+                if (res.original_size && res.reduced_size) {
+                    const origKB = Math.round(res.original_size / 1024);
+                    const redKB = Math.round(res.reduced_size / 1024);
+                    const pct = Math.round((1 - (res.reduced_size / res.original_size)) * 100);
+                    savingsText = ` (Reduced ${origKB}KB → ${redKB}KB, -${pct}%)`;
+                }
+                saveStatus.innerText = 'Image compressed & uploaded!' + savingsText;
+            }
+        } else {
+            alert('Image upload failed: ' + (res.error || 'Server error'));
+            if (saveStatus) saveStatus.innerText = '';
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Image upload failed. Upload file manually or check file size (max 4MB).');
+        if (saveStatus) saveStatus.innerText = '';
+    });
+}
+
+initSummernoteEditor();
 
 document.addEventListener("DOMContentLoaded", function() {
-
+    const blogForm = document.getElementById('blogForm');
     const titleInput = document.getElementById('blog_title');
     const slugInput = document.getElementById('blog_slug');
     const excerptInput = document.getElementById('blog_excerpt');
@@ -520,47 +622,116 @@ document.addEventListener("DOMContentLoaded", function() {
     function updateSERP() {
         const titleVal = metaTitleInput.value.trim() || titleInput.value.trim() || 'Your Article Headline Will Appear Here';
         const slugVal = slugInput.value.trim() || slugify(titleInput.value.trim()) || 'your-slug';
-        const descVal = metaDescInput.value.trim() || excerptInput.value.trim() || 'Meta description snippet will appear here in Google search results.';
+        let descVal = metaDescInput.value.trim() || excerptInput.value.trim();
 
-        serpTitle.innerText = titleVal;
-        serpSlug.innerText = slugVal;
-        serpDesc.innerText = descVal;
+        if (!descVal && window.jQuery && typeof jQuery.fn.summernote === 'function') {
+            const rawCode = $('#blog_content').summernote('code');
+            const d = document.createElement('div');
+            d.innerHTML = rawCode;
+            descVal = (d.textContent || d.innerText || '').substring(0, 160);
+        }
+        if (!descVal) {
+            descVal = 'Meta description snippet will appear here in Google search results.';
+        }
 
+        if (serpTitle) serpTitle.innerText = titleVal;
+        if (serpSlug) serpSlug.innerText = slugVal;
+        if (serpDesc) serpDesc.innerText = descVal;
+
+        // Counters
         const titleLen = metaTitleInput.value.length;
-        metaTitleCounter.innerText = `${titleLen} / 60 chars`;
-        if (titleLen > 60) {
-            metaTitleCounter.className = 'small font-monospace text-danger';
-        } else if (titleLen >= 45) {
-            metaTitleCounter.className = 'small font-monospace text-success fw-bold';
-        } else {
-            metaTitleCounter.className = 'small font-monospace text-muted';
+        if (metaTitleCounter) {
+            metaTitleCounter.innerText = `${titleLen} / 60 chars`;
+            if (titleLen > 60) {
+                metaTitleCounter.className = 'small font-monospace text-danger';
+            } else if (titleLen >= 45) {
+                metaTitleCounter.className = 'small font-monospace text-success fw-bold';
+            } else {
+                metaTitleCounter.className = 'small font-monospace text-muted';
+            }
         }
 
         const descLen = metaDescInput.value.length;
-        metaDescCounter.innerText = `${descLen} / 160 chars`;
-        if (descLen > 160) {
-            metaDescCounter.className = 'small font-monospace text-danger';
-        } else if (descLen >= 120) {
-            metaDescCounter.className = 'small font-monospace text-success fw-bold';
-        } else {
-            metaDescCounter.className = 'small font-monospace text-muted';
+        if (metaDescCounter) {
+            metaDescCounter.innerText = `${descLen} / 160 chars`;
+            if (descLen > 160) {
+                metaDescCounter.className = 'small font-monospace text-danger';
+            } else if (descLen >= 120) {
+                metaDescCounter.className = 'small font-monospace text-success fw-bold';
+            } else {
+                metaDescCounter.className = 'small font-monospace text-muted';
+            }
         }
     }
 
-    statusToggle.addEventListener('change', function() {
-        statusLabel.innerText = this.checked ? 'Published Live' : 'Saved as Draft';
-    });
+    if (statusToggle) {
+        statusToggle.addEventListener('change', function() {
+            statusLabel.innerText = this.checked ? 'Published Live' : 'Saved as Draft';
+        });
+    }
 
-    imageInput.addEventListener('change', function() {
-        const file = this.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                imgPreview.src = e.target.result;
-                imagePreviewBox.style.display = 'block';
-                if (existingImageBox) existingImageBox.style.display = 'none';
-            };
-            reader.readAsDataURL(file);
+    if (imageInput) {
+        imageInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imgPreview.src = e.target.result;
+                    imagePreviewBox.style.display = 'block';
+                    if (existingImageBox) existingImageBox.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // CRITICAL: Synchronize Summernote editor code into <textarea> before form submit
+    blogForm.addEventListener('submit', function(e) {
+        if (window.jQuery && typeof jQuery.fn.summernote === 'function') {
+            const editorCode = $('#blog_content').summernote('code');
+            const isEmpty = $('#blog_content').summernote('isEmpty');
+
+            if (isEmpty || editorCode === '<p><br></p>' || editorCode.trim() === '') {
+                $('#blog_content').val('');
+            } else {
+                $('#blog_content').val(editorCode);
+            }
+        }
+
+        const finalVal = document.getElementById('blog_content').value.trim();
+        const stripped = finalVal.replace(/<[^>]*>?/gm, '').trim();
+
+        if (!finalVal || (stripped === '' && !finalVal.includes('<img'))) {
+            e.preventDefault();
+            alert('Please write your blog article content before saving.');
+            if (window.jQuery && typeof jQuery.fn.summernote === 'function') {
+                $('#blog_content').summernote('focus');
+            }
+            return false;
+        }
+
+        const catSelect = document.getElementById('blog_category');
+        if (!catSelect.value) {
+            e.preventDefault();
+            alert('Please select a category for this article.');
+            catSelect.focus();
+            return false;
+        }
+
+        // Show update spinner on button
+        const btn = document.getElementById('btnUpdate');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Saving Changes...';
+            let hiddenSave = document.getElementById('hidden_save_blog');
+            if (!hiddenSave) {
+                hiddenSave = document.createElement('input');
+                hiddenSave.type = 'hidden';
+                hiddenSave.name = 'save_blog';
+                hiddenSave.id = 'hidden_save_blog';
+                hiddenSave.value = '1';
+                blogForm.appendChild(hiddenSave);
+            }
         }
     });
 
@@ -569,4 +740,3 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 
 <?php require_once 'includes/footer.php'; ?>
-

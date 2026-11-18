@@ -130,31 +130,41 @@ if (isset($_GET['delete'])) {
                     if (mysqli_num_rows($result) > 0) {
                         while ($row = mysqli_fetch_assoc($result)) {
                             $status = $row['status'] == 1 ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>';
-                            $viewLink = "student_details.php?id={$row['id']}";
+                            $viewLink = "student_details.php?id=" . intval($row['id']);
+                            $safeName = htmlspecialchars($row['name'] ?? '', ENT_QUOTES, 'UTF-8');
+                            $safeReg = htmlspecialchars($row['regno'] ?? '', ENT_QUOTES, 'UTF-8');
+                            $safeRoll = htmlspecialchars($row['rollno'] ?? '', ENT_QUOTES, 'UTF-8');
+                            $safeUser = htmlspecialchars($row['username'] ?? '', ENT_QUOTES, 'UTF-8');
+                            $safePass = htmlspecialchars($row['pass'] ?? '', ENT_QUOTES, 'UTF-8');
+                            $safeFather = !empty($row['father']) ? htmlspecialchars($row['father'], ENT_QUOTES, 'UTF-8') : 'N/A';
+                            $safeMother = !empty($row['mother']) ? htmlspecialchars($row['mother'], ENT_QUOTES, 'UTF-8') : 'N/A';
+                            $safeBcode = htmlspecialchars($row['bcode'] ?? '', ENT_QUOTES, 'UTF-8');
+                            $safeCourse = htmlspecialchars($row['course_name'] ?? 'N/A', ENT_QUOTES, 'UTF-8');
+                            $safeDate = htmlspecialchars($row['date'] ?? '', ENT_QUOTES, 'UTF-8');
 
                             echo "<tr>
                                     <td>
-                                        <div class='mb-1'><span class='badge bg-light text-dark border'>Reg: {$row['regno']}</span></div>
-                                        <div><span class='badge bg-light text-dark border'>Roll: {$row['rollno']}</span></div>
+                                        <div class='mb-1'><span class='badge bg-light text-dark border'>Reg: {$safeReg}</span></div>
+                                        <div><span class='badge bg-light text-dark border'>Roll: {$safeRoll}</span></div>
                                     </td>
                                     <td>
-                                        <div class='fw-bold text-dark fs-6'>{$row['name']}</div>
+                                        <div class='fw-bold text-dark fs-6'>{$safeName}</div>
                                         <div class='mt-1 small'>
-                                            <span class='me-2 badge bg-success-subtle text-success border border-success-subtle'><i class='fas fa-user-circle me-1'></i>DB Username: <strong>{$row['username']}</strong></span>
-                                            <span class='badge bg-warning-subtle text-warning-emphasis border border-warning-subtle'><i class='fas fa-key me-1'></i>Pass: <strong>{$row['pass']}</strong></span>
+                                            <span class='me-2 badge bg-success-subtle text-success border border-success-subtle'><i class='fas fa-user-circle me-1'></i>DB Username: <strong>{$safeUser}</strong></span>
+                                            <span class='badge bg-warning-subtle text-warning-emphasis border border-warning-subtle'><i class='fas fa-key me-1'></i>Pass: <strong>{$safePass}</strong></span>
                                         </div>
                                         <div class='small text-muted mt-1' style='font-size: 0.85rem;'>
-                                            <span class='me-2'><strong>Father:</strong> " . (!empty($row['father']) ? htmlspecialchars($row['father']) : 'N/A') . "</span>
-                                            <span><strong>Mother:</strong> " . (!empty($row['mother']) ? htmlspecialchars($row['mother']) : 'N/A') . "</span>
+                                            <span class='me-2'><strong>Father:</strong> {$safeFather}</span>
+                                            <span><strong>Mother:</strong> {$safeMother}</span>
                                         </div>
                                     </td>
-                                    <td><small>{$row['bcode']}</small></td>
-                                    <td><span class='badge bg-info text-dark'>{$row['course_name']}</span></td>
-                                    <td>{$row['date']}</td>
+                                    <td><small>{$safeBcode}</small></td>
+                                    <td><span class='badge bg-info text-dark'>{$safeCourse}</span></td>
+                                    <td>{$safeDate}</td>
                                     <td>{$status}</td>
                                     <td>
                                         <a href='{$viewLink}' class='btn btn-sm btn-primary' title='View'><i class='fas fa-eye'></i></a>
-                                        <a href='students?delete={$row['id']}' class='btn btn-sm btn-danger' title='Delete' onclick='return confirm(\"Are you sure?\")'><i class='fas fa-trash'></i></a>
+                                        <a href='students?delete=" . intval($row['id']) . "' class='btn btn-sm btn-danger' title='Delete' onclick='return confirm(\"Are you sure you want to delete this student record?\")'><i class='fas fa-trash'></i></a>
                                     </td>
                                   </tr>";
                         }

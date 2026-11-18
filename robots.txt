@@ -1,7 +1,19 @@
+# robots.txt for Lok Kala Vikas Manch (LKVM)
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
 User-agent: *
 Allow: /
 Disallow: /admin/
+Disallow: /coordinator/
 Disallow: /includes/
-Disallow: /tmp/
+Disallow: /quarantine/
+Disallow: /cache/
 
-Sitemap: http://localhost/lkvm/sitemap.php
+Sitemap: https://lkvmbihar.in/sitemap.xml

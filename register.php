@@ -69,6 +69,11 @@ background-image: url("images/preloader.gif");
 	</div>
 	<div class="form"> 
                             <form action="code/manage_member?flag=add" method="post">
+                            <?php echo function_exists('csrf_field') ? csrf_field() : ''; ?>
+                            <!-- Anti-bot honeypot field -->
+                            <div style="display:none !important;" aria-hidden="true">
+                                <input type="text" name="website_hp_field" value="" tabindex="-1" autocomplete="off">
+                            </div>
                             <div class="row">
 						<?php
 						   $sel=$con->prepare("select * from registration order by id DESC LIMIT 1");
@@ -102,8 +107,8 @@ background-image: url("images/preloader.gif");
 				
 			
                                 <div class="form-group col-md-6 col-sm-12 col-xs-12 col-left-padding"> 
-                                   <label>Name </label> 
-                                    <input type="text" class="form-control"  placeholder="Enter Your Name" name="name" required>
+                                   <label>Student Full Name <span class="text-danger">*</span></label> 
+                                    <input type="text" class="form-control" placeholder="Enter Your Name (Letters Only)" name="name" required pattern="[a-zA-Z\s\.\'-]{2,70}" title="Letters and spaces only. No links or promotional codes allowed.">
                                 </div>   
 								
 								<div class="form-group col-md-6 col-sm-12 col-xs-12 col-left-padding">
@@ -112,13 +117,13 @@ background-image: url("images/preloader.gif");
                                 </div>
 								
 								<div class="form-group col-md-6 col-sm-12 col-xs-12 col-left-padding">
-                                    <label>Father's Name </label> 
-                                    <input type="text" class="form-control"  placeholder="Father's Name" name="father" required>  
+                                    <label>Father's Name <span class="text-danger">*</span></label> 
+                                    <input type="text" class="form-control" placeholder="Father's Name" name="father" required pattern="[a-zA-Z\s\.\'-]{2,70}" title="Letters and spaces only.">  
                                 </div>
 								
                                 <div class="form-group col-md-6 col-sm-12 col-xs-12 col-left-padding">
                                    <label>Mother's Name </label> 
-                                    <input type="text" class="form-control"  placeholder="Mother's Name" name="mother">  
+                                    <input type="text" class="form-control" placeholder="Mother's Name" name="mother" pattern="[a-zA-Z\s\.\'-]{0,70}">  
                                 </div>
 								
 								

@@ -163,8 +163,8 @@ function firewall_is_crawler() {
         return false;
     }
 
-    // Major search bots
-    if (preg_match('/(Googlebot|bingbot|Baiduspider|YandexBot|DuckDuckBot)/i', $ua)) {
+    // Major search bots and Google AdSense / Ad Review crawlers
+    if (preg_match('/(Googlebot|Mediapartners-Google|AdsBot-Google|Google-Adwords|Feedfetcher-Google|bingbot|Baiduspider|YandexBot|DuckDuckBot)/i', $ua)) {
         return true;
     }
 

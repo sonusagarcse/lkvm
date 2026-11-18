@@ -52,7 +52,7 @@ $dynamic_menu_html .= '
                             <li><i class="far fa-envelope"></i><a
                                     href="mailto:<?php echo $CONTACT_EMAIL; ?>"><?php echo $CONTACT_EMAIL; ?></a></li>
                             <li><i class="fas fa-phone-alt" aria-hidden="true"></i>
-                                <ahref="tel:<?php echo $CONTACT_MOBILE; ?>"><?php echo $CONTACT_MOBILE; ?></a>
+                                <a href="tel:<?php echo $CONTACT_MOBILE; ?>"><?php echo $CONTACT_MOBILE; ?></a>
                             </li>
                         </ul>
                     </div>

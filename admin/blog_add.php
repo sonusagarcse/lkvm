@@ -18,9 +18,25 @@ function slugify($text) {
     return empty($text) ? 'post-' . time() : $text;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_blog'])) {
+// Initial form variables
+$title = '';
+$slug = '';
+$category_id = 0;
+$author_name = $_SESSION['admin_name'] ?? 'LKVM Editorial';
+$excerpt = '';
+$content = '';
+$tags = '';
+$status = 1;
+$meta_title = '';
+$meta_description = '';
+$meta_keywords = '';
+$canonical_url = '';
+$schema_type = 'BlogPosting';
+$published_at = date('Y-m-d\TH:i');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['save_blog']) || isset($_POST['title']))) {
     if (!verify_csrf_token()) {
-        die("CSRF validation failed.");
+        die("CSRF validation failed. Please reload the page and try again.");
     }
 
     $title = trim($_POST['title'] ?? '');
@@ -38,14 +54,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_blog'])) {
     $meta_keywords = trim($_POST['meta_keywords'] ?? '');
     $canonical_url = trim($_POST['canonical_url'] ?? '');
     $schema_type = trim($_POST['schema_type'] ?? 'BlogPosting');
-    $published_at = !empty($_POST['published_at']) ? $_POST['published_at'] : date('Y-m-d H:i:s');
+    $published_at_raw = !empty($_POST['published_at']) ? $_POST['published_at'] : date('Y-m-d H:i:s');
+    $published_at_db = date('Y-m-d H:i:s', strtotime($published_at_raw));
+
+    // Check for empty content (ignoring empty HTML paragraph tags like <p><br></p>)
+    $content_text = trim(strip_tags($content, '<img><iframe><video><audio>'));
 
     if (empty($title)) {
         $error = "Blog title is required.";
     } elseif ($category_id <= 0) {
         $error = "Please select a valid blog category.";
-    } elseif (empty($content)) {
-        $error = "Blog content cannot be empty.";
+    } elseif (empty($content) || (empty($content_text) && strpos($content, '<img') === false)) {
+        $error = "Blog content cannot be empty. Please enter your article body before publishing.";
     } else {
         // Generate or clean slug
         $slug = empty($slug) ? slugify($title) : slugify($slug);
@@ -62,23 +82,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_blog'])) {
 
         // If meta_title or meta_description is empty, auto-populate from title and excerpt/content
         if (empty($meta_title)) {
-            $meta_title = $title . ' | ' . $SITE_NAME;
+            $meta_title = $title . ' | ' . ($SITE_NAME ?? 'LKVM');
         }
         if (empty($meta_description)) {
             $meta_description = !empty($excerpt) ? substr($excerpt, 0, 160) : substr(strip_tags($content), 0, 160);
         }
 
-        // Handle Image Upload
+        // Handle Featured Image Upload with Automatic Space-Saving Compression
         $featured_image = '';
         if (isset($_FILES['featured_image']) && $_FILES['featured_image']['error'] !== UPLOAD_ERR_NO_FILE) {
             $allowed_exts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
             $allowed_mimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-            $upload_res = secure_upload_file($_FILES['featured_image'], $uploadDir, $allowed_exts, $allowed_mimes, 3145728);
+            // Compress and resize image (max 1280x1280, 80% quality, modern WebP format) to save ~80-95% space
+            $upload_res = secure_upload_file($_FILES['featured_image'], $uploadDir, $allowed_exts, $allowed_mimes, 10485760, true, 1280, 1280, 80, 'blog_cover_');
             if ($upload_res['success']) {
                 $featured_image = $upload_res['filename'];
             } else {
                 $error = "Featured Image Error: " . $upload_res['error'];
             }
+        }
+
+        // Automatically compress any inline base64 images that were pasted into the editor
+        if (empty($error)) {
+            $content = extract_and_compress_base64_images($content, $uploadDir, $SITE_URL, 'blog_inline_');
         }
 
         if (empty($error)) {
@@ -104,12 +130,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_blog'])) {
                     $canonical_url,
                     $schema_type,
                     $status,
-                    $published_at
+                    $published_at_db
                 );
 
                 if ($stmt->execute()) {
                     $new_id = $stmt->insert_id;
                     $stmt->close();
+                    // Clear auto-save draft from browser storage
+                    echo "<script>if(window.localStorage) { localStorage.removeItem('lkvm_blog_draft_add'); }</script>";
                     header("Location: blog_manage?msg=created");
                     exit();
                 } else {
@@ -123,13 +151,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_blog'])) {
     }
 }
 
-// Fetch categories
+// Fetch categories safely into array
+$categories = [];
 $cats_q = mysqli_query($con, "SELECT id, name FROM blog_categories WHERE status = 1 ORDER BY name ASC");
+if ($cats_q) {
+    while ($cat = mysqli_fetch_assoc($cats_q)) {
+        $categories[] = $cat;
+    }
+}
 
 require_once 'includes/header.php';
 ?>
 
-<!-- Summernote Lite Editor CSS (via High-Speed Cloudflare CDN) -->
+<!-- Summernote Lite Editor CSS -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.css" rel="stylesheet">
 <style>
 .note-editor.note-frame {
@@ -153,8 +187,11 @@ require_once 'includes/header.php';
     font-size: 15.5px !important;
     line-height: 1.75 !important;
     color: #1e293b !important;
-    min-height: 360px !important;
+    min-height: 380px !important;
     background: #ffffff !important;
+}
+.draft-badge {
+    transition: all 0.3s ease;
 }
 </style>
 
@@ -172,19 +209,27 @@ require_once 'includes/header.php';
         </h3>
         <p class="text-muted small mb-0">Craft compelling content optimized for readers and Google search rankings</p>
     </div>
-    <div class="col-md-5 text-md-end mt-3 mt-md-0">
+    <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end align-items-center gap-2">
+        <button type="button" id="btnRestoreDraft" class="btn btn-sm btn-outline-info rounded-pill px-3 shadow-sm d-none" onclick="restoreLocalDraft()">
+            <i class="fas fa-history me-1"></i> Restore Autosaved Draft
+        </button>
         <a href="blog_manage" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
             <i class="fas fa-arrow-left me-1"></i> Back to Blog List
         </a>
     </div>
 </div>
 
-<?php if ($error): ?>
+<?php if (!empty($error)): ?>
     <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm" role="alert">
         <i class="fas fa-exclamation-triangle me-2"></i><?php echo htmlspecialchars($error); ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 <?php endif; ?>
+
+<div id="draftAlert" class="alert alert-info alert-dismissible fade show rounded-3 shadow-sm d-none" role="alert">
+    <i class="fas fa-magic me-2"></i>An autosaved draft of your article was found. <a href="javascript:void(0)" onclick="restoreLocalDraft()" class="fw-bold text-decoration-underline text-info">Click here to restore it</a>.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
 
 <form method="POST" action="" enctype="multipart/form-data" id="blogForm">
     <?php echo csrf_field(); ?>
@@ -196,14 +241,14 @@ require_once 'includes/header.php';
                     <!-- Title -->
                     <div class="mb-3">
                         <label class="form-label fw-bold fs-6">Article Title <span class="text-danger">*</span></label>
-                        <input type="text" name="title" id="blog_title" class="form-control form-control-lg fw-bold" placeholder="Enter an engaging, keyword-rich headline..." value="<?php echo htmlspecialchars($_POST['title'] ?? ''); ?>" required>
+                        <input type="text" name="title" id="blog_title" class="form-control form-control-lg fw-bold" placeholder="Enter an engaging, keyword-rich headline..." value="<?php echo htmlspecialchars($title); ?>" required>
                     </div>
 
                     <!-- Slug Display & Editor -->
                     <div class="mb-4 p-3 bg-light rounded-3 border d-flex align-items-center gap-2 flex-wrap">
                         <span class="small fw-bold text-muted"><i class="fas fa-link me-1"></i>Permalink:</span>
                         <span class="small text-muted font-monospace"><?php echo $SITE_URL; ?>/blog/</span>
-                        <input type="text" name="slug" id="blog_slug" class="form-control form-control-sm font-monospace flex-grow-1" style="max-width: 320px;" placeholder="auto-generated-slug" value="<?php echo htmlspecialchars($_POST['slug'] ?? ''); ?>">
+                        <input type="text" name="slug" id="blog_slug" class="form-control form-control-sm font-monospace flex-grow-1" style="max-width: 320px;" placeholder="auto-generated-slug" value="<?php echo htmlspecialchars($slug); ?>">
                         <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="regenerateSlug()" title="Regenerate from Title"><i class="fas fa-sync-alt"></i></button>
                     </div>
 
@@ -213,13 +258,16 @@ require_once 'includes/header.php';
                             <label class="form-label fw-bold mb-0">Short Excerpt / Summary</label>
                             <span class="small text-muted" id="excerpt_counter">0 / 250</span>
                         </div>
-                        <textarea name="excerpt" id="blog_excerpt" class="form-control" rows="3" placeholder="A captivating 1-2 sentence overview shown in blog grids and social shares..."><?php echo htmlspecialchars($_POST['excerpt'] ?? ''); ?></textarea>
+                        <textarea name="excerpt" id="blog_excerpt" class="form-control" rows="3" placeholder="A captivating 1-2 sentence overview shown in blog grids and social shares..."><?php echo htmlspecialchars($excerpt); ?></textarea>
                     </div>
 
                     <!-- Rich Text Editor -->
                     <div class="mb-2">
-                        <label class="form-label fw-bold">Full Content Body <span class="text-danger">*</span></label>
-                        <textarea name="content" id="blog_content" class="form-control" rows="14" style="width: 100%; min-height: 380px; font-family: inherit; font-size: 15px; line-height: 1.6;"><?php echo htmlspecialchars($_POST['content'] ?? ''); ?></textarea>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-bold mb-0">Full Content Body <span class="text-danger">*</span></label>
+                            <span class="small text-muted" id="draft_save_status"></span>
+                        </div>
+                        <textarea name="content" id="blog_content" class="form-control" rows="14" style="width: 100%; min-height: 380px; font-family: inherit; font-size: 15px; line-height: 1.6;"><?php echo htmlspecialchars($content); ?></textarea>
                     </div>
                 </div>
             </div>
@@ -262,7 +310,7 @@ require_once 'includes/header.php';
                                 <label class="form-label fw-bold mb-0">SEO Meta Title</label>
                                 <span class="small font-monospace" id="meta_title_counter">0 / 60 characters</span>
                             </div>
-                            <input type="text" name="meta_title" id="meta_title" class="form-control" placeholder="Targeted SEO Title for browser tabs & Google search..." value="<?php echo htmlspecialchars($_POST['meta_title'] ?? ''); ?>">
+                            <input type="text" name="meta_title" id="meta_title" class="form-control" placeholder="Targeted SEO Title for browser tabs & Google search..." value="<?php echo htmlspecialchars($meta_title); ?>">
                             <div class="form-text">Recommended: 50 - 60 characters. Leave blank to auto-use article title.</div>
                         </div>
 
@@ -272,14 +320,14 @@ require_once 'includes/header.php';
                                 <label class="form-label fw-bold mb-0">SEO Meta Description</label>
                                 <span class="small font-monospace" id="meta_desc_counter">0 / 160 characters</span>
                             </div>
-                            <textarea name="meta_description" id="meta_description" class="form-control" rows="3" placeholder="Concise summary shown under headline on Google search results..."><?php echo htmlspecialchars($_POST['meta_description'] ?? ''); ?></textarea>
+                            <textarea name="meta_description" id="meta_description" class="form-control" rows="3" placeholder="Concise summary shown under headline on Google search results..."><?php echo htmlspecialchars($meta_description); ?></textarea>
                             <div class="form-text">Recommended: 140 - 160 characters. Highlight keywords and a clear call to action.</div>
                         </div>
 
                         <!-- Meta Keywords -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Focus & Meta Keywords</label>
-                            <input type="text" name="meta_keywords" class="form-control" placeholder="e.g. computer training, bihar education, kyp" value="<?php echo htmlspecialchars($_POST['meta_keywords'] ?? ''); ?>">
+                            <input type="text" name="meta_keywords" class="form-control" placeholder="e.g. computer training, bihar education, kyp" value="<?php echo htmlspecialchars($meta_keywords); ?>">
                             <div class="form-text">Comma-separated keywords.</div>
                         </div>
 
@@ -287,10 +335,10 @@ require_once 'includes/header.php';
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Schema.org Structured Data Type</label>
                             <select name="schema_type" class="form-select">
-                                <option value="BlogPosting" selected>BlogPosting (Recommended)</option>
-                                <option value="Article">Article</option>
-                                <option value="NewsArticle">NewsArticle</option>
-                                <option value="EducationalOccupationalCredential">Educational Article</option>
+                                <option value="BlogPosting" <?php echo ($schema_type === 'BlogPosting') ? 'selected' : ''; ?>>BlogPosting (Recommended)</option>
+                                <option value="Article" <?php echo ($schema_type === 'Article') ? 'selected' : ''; ?>>Article</option>
+                                <option value="NewsArticle" <?php echo ($schema_type === 'NewsArticle') ? 'selected' : ''; ?>>NewsArticle</option>
+                                <option value="EducationalOccupationalCredential" <?php echo ($schema_type === 'EducationalOccupationalCredential') ? 'selected' : ''; ?>>Educational Article</option>
                             </select>
                             <div class="form-text">Powers Google Rich Snippets & knowledge panels.</div>
                         </div>
@@ -298,7 +346,7 @@ require_once 'includes/header.php';
                         <!-- Canonical URL -->
                         <div class="col-12">
                             <label class="form-label fw-bold">Canonical URL (Advanced)</label>
-                            <input type="url" name="canonical_url" class="form-control" placeholder="Defaults to this article URL automatically" value="<?php echo htmlspecialchars($_POST['canonical_url'] ?? ''); ?>">
+                            <input type="url" name="canonical_url" class="form-control" placeholder="Defaults to this article URL automatically" value="<?php echo htmlspecialchars($canonical_url); ?>">
                             <div class="form-text">Only needed if this article was syndicated from another canonical source.</div>
                         </div>
                     </div>
@@ -318,8 +366,8 @@ require_once 'includes/header.php';
                     <div class="mb-4">
                         <label class="form-label fw-bold">Post Status</label>
                         <div class="form-check form-switch mt-1">
-                            <input class="form-check-input" type="checkbox" name="status" id="blog_status" value="1" checked style="width: 50px; height: 26px;">
-                            <label class="form-check-label fw-bold ms-2" for="blog_status" id="status_label">Published Live</label>
+                            <input class="form-check-input" type="checkbox" name="status" id="blog_status" value="1" <?php echo ($status === 1) ? 'checked' : ''; ?> style="width: 50px; height: 26px;">
+                            <label class="form-check-label fw-bold ms-2" for="blog_status" id="status_label"><?php echo ($status === 1) ? 'Published Live' : 'Saved as Draft'; ?></label>
                         </div>
                     </div>
 
@@ -329,33 +377,33 @@ require_once 'includes/header.php';
                             <label class="form-label fw-bold mb-0">Category <span class="text-danger">*</span></label>
                             <a href="blog_categories" target="_blank" class="small text-primary text-decoration-none">+ New Category</a>
                         </div>
-                        <select name="category_id" class="form-select" required>
+                        <select name="category_id" id="blog_category" class="form-select" required>
                             <option value="">-- Choose Category --</option>
-                            <?php while ($cat = mysqli_fetch_assoc($cats_q)): ?>
-                                <option value="<?php echo $cat['id']; ?>">
+                            <?php foreach ($categories as $cat): ?>
+                                <option value="<?php echo $cat['id']; ?>" <?php echo ($category_id == $cat['id']) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($cat['name']); ?>
                                 </option>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </select>
                     </div>
 
                     <!-- Author Name -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">Author Name</label>
-                        <input type="text" name="author_name" class="form-control" value="<?php echo htmlspecialchars($_SESSION['admin_name'] ?? 'LKVM Editorial'); ?>" required>
+                        <input type="text" name="author_name" class="form-control" value="<?php echo htmlspecialchars($author_name); ?>" required>
                     </div>
 
                     <!-- Tags -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">Tags</label>
-                        <input type="text" name="tags" class="form-control" placeholder="e.g. Technology, Students, KYP" value="<?php echo htmlspecialchars($_POST['tags'] ?? ''); ?>">
+                        <input type="text" name="tags" class="form-control" placeholder="e.g. Technology, Students, KYP" value="<?php echo htmlspecialchars($tags); ?>">
                         <div class="form-text">Comma-separated tags for filtering & search.</div>
                     </div>
 
                     <!-- Publication Date -->
                     <div class="mb-4">
                         <label class="form-label fw-bold">Publish Date & Time</label>
-                        <input type="datetime-local" name="published_at" class="form-control" value="<?php echo date('Y-m-d\TH:i'); ?>">
+                        <input type="datetime-local" name="published_at" class="form-control" value="<?php echo date('Y-m-d\TH:i', strtotime($published_at)); ?>">
                     </div>
 
                     <!-- Featured Image Upload -->
@@ -374,7 +422,7 @@ require_once 'includes/header.php';
 
                     <!-- Action Buttons -->
                     <div class="d-grid gap-2">
-                        <button type="submit" name="save_blog" class="btn btn-primary rounded-pill py-2 fw-bold shadow-sm">
+                        <button type="submit" name="save_blog" id="btnPublish" class="btn btn-primary rounded-pill py-2 fw-bold shadow-sm">
                             <i class="fas fa-paper-plane me-2"></i> Publish Article
                         </button>
                         <a href="blog_manage" class="btn btn-light rounded-pill py-2">Cancel</a>
@@ -388,32 +436,199 @@ require_once 'includes/header.php';
 <!-- Summernote Lite Script (via Cloudflare CDN) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.js"></script>
 <script>
-(function initEditor() {
-    function setupSummernote() {
-        if (window.jQuery && typeof jQuery.fn.summernote === 'function') {
-            $('#blog_content').summernote({
-                placeholder: 'Write your comprehensive blog article here...',
-                tabsize: 2,
-                height: 400,
-                toolbar: [
-                    ['style', ['style']],
-                    ['font', ['bold', 'italic', 'underline', 'clear']],
-                    ['color', ['color']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['table', ['table']],
-                    ['insert', ['link', 'picture', 'video']],
-                    ['view', ['fullscreen', 'codeview', 'help']]
-                ]
+const DRAFT_KEY = 'lkvm_blog_draft_add';
+
+// Initialize Summernote safely
+function initSummernoteEditor() {
+    if (window.jQuery && typeof jQuery.fn.summernote === 'function') {
+        $('#blog_content').summernote({
+            placeholder: 'Write your comprehensive blog article here...',
+            tabsize: 2,
+            height: 420,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                ['fontname', ['fontname']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['table', ['table']],
+                ['insert', ['link', 'picture', 'video', 'hr']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+            ],
+            callbacks: {
+                onImageUpload: function(files) {
+                    for (let i = 0; i < files.length; i++) {
+                        uploadEditorImage(files[i]);
+                    }
+                },
+                onPaste: function(e) {
+                    const clipboardData = e.originalEvent.clipboardData || window.clipboardData;
+                    if (clipboardData && clipboardData.items) {
+                        for (let i = 0; i < clipboardData.items.length; i++) {
+                            const item = clipboardData.items[i];
+                            if (item.type && item.type.indexOf("image") !== -1) {
+                                const file = item.getAsFile();
+                                if (file) {
+                                    uploadEditorImage(file);
+                                    e.preventDefault();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                },
+                onChange: function(contents) {
+                    // Automatically trigger SERP preview update if meta description is empty
+                    const metaDescInput = document.getElementById('meta_description');
+                    const excerptInput = document.getElementById('blog_excerpt');
+                    if (!metaDescInput.value && !excerptInput.value) {
+                        const tmp = document.createElement('div');
+                        tmp.innerHTML = contents;
+                        const text = tmp.textContent || tmp.innerText || '';
+                        const serpDesc = document.getElementById('serp_desc_preview');
+                        if (serpDesc) {
+                            serpDesc.innerText = text.substring(0, 160) || 'Meta description snippet will appear here in Google search results.';
+                        }
+                    }
+                }
+            }
+        });
+
+        // Check if there is an autosaved draft in localStorage and textarea is empty
+        checkLocalDraft();
+    } else {
+        setTimeout(initSummernoteEditor, 50);
+    }
+}
+
+// Upload inline Summernote image to server instead of massive Base64
+function uploadEditorImage(file) {
+    const data = new FormData();
+    data.append("image", file);
+    const csrfToken = document.querySelector('input[name="csrf_token"]');
+    if (csrfToken) {
+        data.append("csrf_token", csrfToken.value);
+    }
+
+    const saveStatus = document.getElementById('draft_save_status');
+    if (saveStatus) saveStatus.innerText = 'Uploading image...';
+
+    fetch('ajax_blog_image.php', {
+        method: 'POST',
+        body: data
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res && res.success) {
+            $('#blog_content').summernote('insertImage', res.url, function($img) {
+                $img.addClass('img-fluid rounded shadow-sm my-3');
             });
+            if (saveStatus) {
+                let savingsText = '';
+                if (res.original_size && res.reduced_size) {
+                    const origKB = Math.round(res.original_size / 1024);
+                    const redKB = Math.round(res.reduced_size / 1024);
+                    const pct = Math.round((1 - (res.reduced_size / res.original_size)) * 100);
+                    savingsText = ` (Reduced ${origKB}KB → ${redKB}KB, -${pct}%)`;
+                }
+                saveStatus.innerText = 'Image compressed & uploaded!' + savingsText;
+            }
         } else {
-            setTimeout(setupSummernote, 60);
+            alert('Image upload failed: ' + (res.error || 'Server error'));
+            if (saveStatus) saveStatus.innerText = '';
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Image upload failed. Upload file manually or check file size (max 4MB).');
+        if (saveStatus) saveStatus.innerText = '';
+    });
+}
+
+// Draft check & restore functions
+function checkLocalDraft() {
+    try {
+        const savedDraft = localStorage.getItem(DRAFT_KEY);
+        const currentContent = $('#blog_content').summernote('code');
+        const isEmptyCurrent = $('#blog_content').summernote('isEmpty') || currentContent === '<p><br></p>' || currentContent.trim() === '';
+        
+        if (savedDraft && isEmptyCurrent) {
+            const draftData = JSON.parse(savedDraft);
+            if (draftData && (draftData.title || (draftData.content && draftData.content !== '<p><br></p>'))) {
+                const draftAlert = document.getElementById('draftAlert');
+                const btnRestore = document.getElementById('btnRestoreDraft');
+                if (draftAlert) draftAlert.classList.remove('d-none');
+                if (btnRestore) btnRestore.classList.remove('d-none');
+            }
+        }
+    } catch(e) {}
+}
+
+function restoreLocalDraft() {
+    try {
+        const savedDraft = localStorage.getItem(DRAFT_KEY);
+        if (!savedDraft) return;
+        const draft = JSON.parse(savedDraft);
+        if (draft.title && !document.getElementById('blog_title').value) {
+            document.getElementById('blog_title').value = draft.title;
+        }
+        if (draft.slug && !document.getElementById('blog_slug').value) {
+            document.getElementById('blog_slug').value = draft.slug;
+        }
+        if (draft.excerpt && !document.getElementById('blog_excerpt').value) {
+            document.getElementById('blog_excerpt').value = draft.excerpt;
+        }
+        if (draft.content) {
+            $('#blog_content').summernote('code', draft.content);
+        }
+        if (draft.meta_title && !document.getElementById('meta_title').value) {
+            document.getElementById('meta_title').value = draft.meta_title;
+        }
+        if (draft.meta_description && !document.getElementById('meta_description').value) {
+            document.getElementById('meta_description').value = draft.meta_description;
+        }
+        const draftAlert = document.getElementById('draftAlert');
+        if (draftAlert) draftAlert.classList.add('d-none');
+        const saveStatus = document.getElementById('draft_save_status');
+        if (saveStatus) saveStatus.innerText = 'Draft restored from ' + (draft.timestamp || 'autosave');
+        if (typeof window.updateSERP === 'function') {
+            window.updateSERP();
+        }
+    } catch(e) {
+        console.error('Failed to restore draft', e);
+    }
+}
+
+// Auto-save draft every 15 seconds
+setInterval(function() {
+    if (window.jQuery && typeof jQuery.fn.summernote === 'function') {
+        const title = document.getElementById('blog_title').value;
+        const content = $('#blog_content').summernote('code');
+        const isEmpty = $('#blog_content').summernote('isEmpty');
+
+        if (title.trim() !== '' || (!isEmpty && content !== '<p><br></p>')) {
+            const draft = {
+                title: title,
+                slug: document.getElementById('blog_slug').value,
+                excerpt: document.getElementById('blog_excerpt').value,
+                content: content,
+                meta_title: document.getElementById('meta_title').value,
+                meta_description: document.getElementById('meta_description').value,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            try {
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+                const saveStatus = document.getElementById('draft_save_status');
+                if (saveStatus) saveStatus.innerText = 'Draft autosaved at ' + draft.timestamp;
+            } catch(e) {}
         }
     }
-    setupSummernote();
-})();
+}, 15000);
+
+initSummernoteEditor();
 
 document.addEventListener("DOMContentLoaded", function() {
-
+    const blogForm = document.getElementById('blogForm');
     const titleInput = document.getElementById('blog_title');
     const slugInput = document.getElementById('blog_slug');
     const excerptInput = document.getElementById('blog_excerpt');
@@ -456,10 +671,14 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     titleInput.addEventListener('input', function() {
-        if (!slugManual && slugInput.value === '') {
+        if (!slugManual && (slugInput.value === '' || !slugInput.dataset.touched)) {
             slugInput.value = slugify(this.value);
         }
         updateSERP();
+    });
+
+    slugInput.addEventListener('change', function() {
+        slugInput.dataset.touched = 'true';
     });
 
     excerptInput.addEventListener('input', function() {
@@ -470,50 +689,119 @@ document.addEventListener("DOMContentLoaded", function() {
     metaTitleInput.addEventListener('input', updateSERP);
     metaDescInput.addEventListener('input', updateSERP);
 
-    function updateSERP() {
+    window.updateSERP = function() {
         const titleVal = metaTitleInput.value.trim() || titleInput.value.trim() || 'Your Article Headline Will Appear Here';
         const slugVal = slugInput.value.trim() || slugify(titleInput.value.trim()) || 'your-slug';
-        const descVal = metaDescInput.value.trim() || excerptInput.value.trim() || 'Meta description snippet will appear here in Google search results. Make it informative and compelling to achieve high click-through rates.';
+        let descVal = metaDescInput.value.trim() || excerptInput.value.trim();
+        
+        if (!descVal && window.jQuery && typeof jQuery.fn.summernote === 'function') {
+            const rawCode = $('#blog_content').summernote('code');
+            const d = document.createElement('div');
+            d.innerHTML = rawCode;
+            descVal = (d.textContent || d.innerText || '').substring(0, 160);
+        }
+        if (!descVal) {
+            descVal = 'Meta description snippet will appear here in Google search results. Make it informative and compelling to achieve high click-through rates.';
+        }
 
-        serpTitle.innerText = titleVal;
-        serpSlug.innerText = slugVal;
-        serpDesc.innerText = descVal;
+        if (serpTitle) serpTitle.innerText = titleVal;
+        if (serpSlug) serpSlug.innerText = slugVal;
+        if (serpDesc) serpDesc.innerText = descVal;
 
-        // Character counters
+        // Counters
         const titleLen = metaTitleInput.value.length;
-        metaTitleCounter.innerText = `${titleLen} / 60 chars`;
-        if (titleLen > 60) {
-            metaTitleCounter.className = 'small font-monospace text-danger';
-        } else if (titleLen >= 45) {
-            metaTitleCounter.className = 'small font-monospace text-success fw-bold';
-        } else {
-            metaTitleCounter.className = 'small font-monospace text-muted';
+        if (metaTitleCounter) {
+            metaTitleCounter.innerText = `${titleLen} / 60 chars`;
+            if (titleLen > 60) {
+                metaTitleCounter.className = 'small font-monospace text-danger';
+            } else if (titleLen >= 45) {
+                metaTitleCounter.className = 'small font-monospace text-success fw-bold';
+            } else {
+                metaTitleCounter.className = 'small font-monospace text-muted';
+            }
         }
 
         const descLen = metaDescInput.value.length;
-        metaDescCounter.innerText = `${descLen} / 160 chars`;
-        if (descLen > 160) {
-            metaDescCounter.className = 'small font-monospace text-danger';
-        } else if (descLen >= 120) {
-            metaDescCounter.className = 'small font-monospace text-success fw-bold';
-        } else {
-            metaDescCounter.className = 'small font-monospace text-muted';
+        if (metaDescCounter) {
+            metaDescCounter.innerText = `${descLen} / 160 chars`;
+            if (descLen > 160) {
+                metaDescCounter.className = 'small font-monospace text-danger';
+            } else if (descLen >= 120) {
+                metaDescCounter.className = 'small font-monospace text-success fw-bold';
+            } else {
+                metaDescCounter.className = 'small font-monospace text-muted';
+            }
         }
+    };
+
+    if (statusToggle) {
+        statusToggle.addEventListener('change', function() {
+            statusLabel.innerText = this.checked ? 'Published Live' : 'Saved as Draft';
+        });
     }
 
-    statusToggle.addEventListener('change', function() {
-        statusLabel.innerText = this.checked ? 'Published Live' : 'Saved as Draft';
-    });
+    if (imageInput) {
+        imageInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imgPreview.src = e.target.result;
+                    imagePreviewBox.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
 
-    imageInput.addEventListener('change', function() {
-        const file = this.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                imgPreview.src = e.target.result;
-                imagePreviewBox.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
+    // CRITICAL: Synchronize Summernote editor code into <textarea> before form submit
+    blogForm.addEventListener('submit', function(e) {
+        if (window.jQuery && typeof jQuery.fn.summernote === 'function') {
+            const editorCode = $('#blog_content').summernote('code');
+            const isEmpty = $('#blog_content').summernote('isEmpty');
+
+            if (isEmpty || editorCode === '<p><br></p>' || editorCode.trim() === '') {
+                $('#blog_content').val('');
+            } else {
+                $('#blog_content').val(editorCode);
+            }
+        }
+
+        const finalVal = document.getElementById('blog_content').value.trim();
+        const stripped = finalVal.replace(/<[^>]*>?/gm, '').trim();
+
+        if (!finalVal || (stripped === '' && !finalVal.includes('<img'))) {
+            e.preventDefault();
+            alert('Please write your blog article content before publishing.');
+            if (window.jQuery && typeof jQuery.fn.summernote === 'function') {
+                $('#blog_content').summernote('focus');
+            }
+            return false;
+        }
+
+        const catSelect = document.getElementById('blog_category');
+        if (!catSelect.value) {
+            e.preventDefault();
+            alert('Please select a category for this article.');
+            catSelect.focus();
+            return false;
+        }
+
+        // Show publishing indicator on button
+        const btn = document.getElementById('btnPublish');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Publishing...';
+            // Create hidden input to ensure save_blog is present even if button is disabled
+            let hiddenSave = document.getElementById('hidden_save_blog');
+            if (!hiddenSave) {
+                hiddenSave = document.createElement('input');
+                hiddenSave.type = 'hidden';
+                hiddenSave.name = 'save_blog';
+                hiddenSave.id = 'hidden_save_blog';
+                hiddenSave.value = '1';
+                blogForm.appendChild(hiddenSave);
+            }
         }
     });
 
@@ -522,4 +810,3 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 
 <?php require_once 'includes/footer.php'; ?>
-
