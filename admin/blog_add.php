@@ -183,12 +183,184 @@ require_once 'includes/header.php';
     border: 1px solid #e2e8f0 !important;
     color: #334155 !important;
 }
+
+/* Editor Typography - Matches Blog Detail Page Exactly */
 .note-editable {
-    font-size: 15.5px !important;
+    font-size: 16.5px !important;
     line-height: 1.75 !important;
-    color: #1e293b !important;
-    min-height: 380px !important;
+    color: #334155 !important;
+    min-height: 400px !important;
     background: #ffffff !important;
+    padding: 24px !important;
+}
+.note-editable p {
+    margin-top: 0 !important;
+    margin-bottom: 14px !important;
+    line-height: 1.75 !important;
+    color: #334155 !important;
+}
+.note-editable h1, 
+.note-editable h2, 
+.note-editable h3, 
+.note-editable h4, 
+.note-editable h5, 
+.note-editable h6 {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    line-height: 1.35 !important;
+    margin-top: 24px !important;
+    margin-bottom: 10px !important;
+    letter-spacing: -0.012em !important;
+}
+.note-editable h1 { font-size: 1.75rem !important; }
+.note-editable h2 { font-size: 1.5rem !important; }
+.note-editable h3 { font-size: 1.3rem !important; }
+.note-editable h4 { font-size: 1.15rem !important; }
+.note-editable h5 { font-size: 1.05rem !important; }
+
+.note-editable ul, 
+.note-editable ol {
+    margin-top: 6px !important;
+    margin-bottom: 16px !important;
+    padding-left: 28px !important;
+}
+.note-editable ul { list-style-type: disc !important; }
+.note-editable ol { list-style-type: decimal !important; }
+.note-editable li {
+    font-size: 16px !important;
+    color: #334155 !important;
+    line-height: 1.65 !important;
+    margin-bottom: 6px !important;
+    padding-left: 4px !important;
+}
+.note-editable li > p,
+.note-editable li p {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    display: inline !important;
+    line-height: inherit !important;
+}
+.note-editable blockquote {
+    border-left: 4px solid #fdc800 !important;
+    background: #f8fafc !important;
+    padding: 16px 24px !important;
+    border-radius: 0 12px 12px 0 !important;
+    font-style: italic !important;
+    color: #1e293b !important;
+    margin: 20px 0 !important;
+    line-height: 1.65 !important;
+}
+
+/* Summernote Modal Isolation Fix (Fixes Picture option glitch with Bootstrap 5) */
+.note-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 10500 !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+    backdrop-filter: blur(4px) !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 20px !important;
+}
+.note-modal:not(.open) {
+    display: none !important;
+}
+.note-modal.open {
+    display: flex !important;
+}
+.note-modal-backdrop {
+    display: none !important;
+}
+.note-modal .modal-dialog {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 520px !important;
+    margin: auto !important;
+    transform: none !important;
+    z-index: 10510 !important;
+    pointer-events: auto !important;
+}
+.note-modal .modal-content {
+    background: #ffffff !important;
+    border: none !important;
+    border-radius: 20px !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25) !important;
+    overflow: hidden !important;
+}
+.note-modal .modal-header {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 18px 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+.note-modal .modal-title {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+}
+.note-modal .close {
+    border: none !important;
+    background: #e2e8f0 !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 20px !important;
+    color: #475569 !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    line-height: 1 !important;
+}
+.note-modal .close:hover {
+    background: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+.note-modal .modal-body {
+    padding: 24px !important;
+}
+.note-modal .note-form-group, 
+.note-modal .form-group {
+    margin-bottom: 16px !important;
+}
+.note-modal .note-form-label {
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    margin-bottom: 6px !important;
+    display: block !important;
+}
+.note-modal .form-control,
+.note-modal .note-input {
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 10px !important;
+    padding: 10px 14px !important;
+    font-size: 0.95rem !important;
+    width: 100% !important;
+}
+.note-modal .modal-footer {
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+    padding: 14px 24px !important;
+}
+.note-modal .btn-primary, 
+.note-modal .note-btn-primary {
+    background: #002147 !important;
+    border: none !important;
+    border-radius: 50px !important;
+    padding: 9px 24px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
 }
 .draft-badge {
     transition: all 0.3s ease;
@@ -263,11 +435,17 @@ require_once 'includes/header.php';
 
                     <!-- Rich Text Editor -->
                     <div class="mb-2">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                             <label class="form-label fw-bold mb-0">Full Content Body <span class="text-danger">*</span></label>
-                            <span class="small text-muted" id="draft_save_status"></span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="small text-muted" id="draft_save_status"></span>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm" onclick="triggerQuickImageUpload()" title="Insert an image directly into the article">
+                                    <i class="fas fa-camera me-1"></i> Add Image to Article
+                                </button>
+                                <input type="file" id="quick_editor_image_file" accept="image/*" style="display:none;" onchange="handleQuickImageUpload(this)">
+                            </div>
                         </div>
-                        <textarea name="content" id="blog_content" class="form-control" rows="14" style="width: 100%; min-height: 380px; font-family: inherit; font-size: 15px; line-height: 1.6;"><?php echo htmlspecialchars($content); ?></textarea>
+                        <textarea name="content" id="blog_content" class="form-control" rows="14" style="width: 100%; min-height: 400px;"><?php echo htmlspecialchars($content); ?></textarea>
                     </div>
                 </div>
             </div>
@@ -501,6 +679,19 @@ function initSummernoteEditor() {
     }
 }
 
+// Quick Image Upload handlers
+function triggerQuickImageUpload() {
+    const input = document.getElementById('quick_editor_image_file');
+    if (input) input.click();
+}
+
+function handleQuickImageUpload(input) {
+    if (input.files && input.files[0]) {
+        uploadEditorImage(input.files[0]);
+        input.value = '';
+    }
+}
+
 // Upload inline Summernote image to server instead of massive Base64
 function uploadEditorImage(file) {
     const data = new FormData();
@@ -511,9 +702,9 @@ function uploadEditorImage(file) {
     }
 
     const saveStatus = document.getElementById('draft_save_status');
-    if (saveStatus) saveStatus.innerText = 'Uploading image...';
+    if (saveStatus) saveStatus.innerText = 'Compressing & uploading image...';
 
-    fetch('ajax_blog_image.php', {
+    fetch('ajax_blog_image', {
         method: 'POST',
         body: data
     })
@@ -523,6 +714,13 @@ function uploadEditorImage(file) {
             $('#blog_content').summernote('insertImage', res.url, function($img) {
                 $img.addClass('img-fluid rounded shadow-sm my-3');
             });
+
+            // Cleanly close any open Summernote modal dialog
+            if (window.jQuery) {
+                $('.note-modal').removeClass('open').hide();
+                $('.note-modal-backdrop').remove();
+            }
+
             if (saveStatus) {
                 let savingsText = '';
                 if (res.original_size && res.reduced_size) {
@@ -531,7 +729,7 @@ function uploadEditorImage(file) {
                     const pct = Math.round((1 - (res.reduced_size / res.original_size)) * 100);
                     savingsText = ` (Reduced ${origKB}KB → ${redKB}KB, -${pct}%)`;
                 }
-                saveStatus.innerText = 'Image compressed & uploaded!' + savingsText;
+                saveStatus.innerText = 'Image compressed & inserted!' + savingsText;
             }
         } else {
             alert('Image upload failed: ' + (res.error || 'Server error'));
@@ -540,8 +738,34 @@ function uploadEditorImage(file) {
     })
     .catch(err => {
         console.error(err);
-        alert('Image upload failed. Upload file manually or check file size (max 4MB).');
+        alert('Image upload failed. Upload file manually or check file size (max 10MB).');
         if (saveStatus) saveStatus.innerText = '';
+    });
+}
+
+// Event bindings for Summernote Modal Dialogs (Fixes Bootstrap 5 modal glitch)
+if (window.jQuery) {
+    $(document).on('change', '.note-image-input', function(e) {
+        if (this.files && this.files.length) {
+            for (let i = 0; i < this.files.length; i++) {
+                uploadEditorImage(this.files[i]);
+            }
+            $(this).closest('.note-modal').removeClass('open').hide();
+            $('.note-modal-backdrop').remove();
+        }
+    });
+
+    $(document).on('click', '.note-modal .close, .note-modal [data-dismiss="modal"]', function(e) {
+        e.preventDefault();
+        $(this).closest('.note-modal').removeClass('open').hide();
+        $('.note-modal-backdrop').remove();
+    });
+
+    $(document).on('click', '.note-modal', function(e) {
+        if ($(e.target).hasClass('note-modal')) {
+            $(this).removeClass('open').hide();
+            $('.note-modal-backdrop').remove();
+        }
     });
 }
 

@@ -11,8 +11,9 @@ RewriteRule ^ - [L]
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s+(.*?/admin/)index\.php[?\s] [NC]
 RewriteRule ^index\.php$ %1 [R=301,L]
 
-# 3. Only externally redirect if user explicitly requested .php in the URL
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s+([^.?\s]+)\.php(\?[^\s]*)?\s+HTTP/ [NC]
+# 3. Only externally redirect GET requests if user explicitly requested .php in the URL (Never redirect POST requests)
+RewriteCond %{REQUEST_METHOD} !POST
+RewriteCond %{THE_REQUEST} ^GET\s+([^.?\s]+)\.php(\?[^\s]*)?\s+HTTP/ [NC]
 RewriteRule ^([a-zA-Z0-9_-]+)\.php$ $1 [R=301,L,NE]
 
 # 4. Internally rewrite clean extensionless request to existing .php file

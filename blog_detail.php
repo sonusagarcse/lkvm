@@ -342,39 +342,131 @@ $sidebar_recent = mysqli_query($con, "SELECT id, title, slug, featured_image, pu
             margin-bottom: 35px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.08);
         }
+        /* Article Typography - Clean, Proportional & Matches Editor */
         .article-content {
-            font-size: 17.5px;
-            line-height: 1.88;
+            font-size: 16.5px;
+            line-height: 1.75;
             color: #334155;
+            word-wrap: break-word;
         }
-        .article-content h2, .article-content h3, .article-content h4 {
-            color: #0f172a;
-            font-weight: 800;
-            margin-top: 36px;
-            margin-bottom: 18px;
-            line-height: 1.35;
-            letter-spacing: -0.015em;
-        }
+
+        /* Clean Paragraph Spacing (Matches Editor) */
         .article-content p {
-            margin-bottom: 22px;
-            color: #334155;
+            margin-top: 0 !important;
+            margin-bottom: 14px !important;
+            line-height: 1.75 !important;
+            color: #334155 !important;
         }
+
+        /* Prevent empty <p><br></p> tags from producing 60px blanks */
+        .article-content p:empty {
+            display: none !important;
+            margin: 0 !important;
+            height: 0 !important;
+        }
+        .article-content p:has(> br:only-child) {
+            margin-top: 0 !important;
+            margin-bottom: 8px !important;
+            line-height: 1 !important;
+        }
+
+        /* Headings Spacing - Compact & Professional */
+        .article-content h1, 
+        .article-content h2, 
+        .article-content h3, 
+        .article-content h4, 
+        .article-content h5, 
+        .article-content h6 {
+            color: #0f172a !important;
+            font-weight: 700 !important;
+            line-height: 1.35 !important;
+            margin-top: 24px !important;
+            margin-bottom: 10px !important;
+            letter-spacing: -0.012em !important;
+        }
+        .article-content h1 { font-size: 1.75rem !important; }
+        .article-content h2 { font-size: 1.5rem !important; }
+        .article-content h3 { font-size: 1.3rem !important; }
+        .article-content h4 { font-size: 1.15rem !important; }
+        .article-content h5 { font-size: 1.05rem !important; }
+
+        /* Headings immediately following another heading */
+        .article-content h1 + h2,
+        .article-content h2 + h3,
+        .article-content h3 + h4 {
+            margin-top: 10px !important;
+        }
+
+        /* Lists - Remove bloated theme spacing and match editor (clean 5-6px spacing) */
+        .article-content ul, 
+        .article-content ol {
+            margin-top: 6px !important;
+            margin-bottom: 16px !important;
+            padding-left: 28px !important;
+            list-style-position: outside !important;
+        }
+        .article-content ul {
+            list-style-type: disc !important;
+        }
+        .article-content ol {
+            list-style-type: decimal !important;
+        }
+        .article-content li {
+            font-size: 16px !important;
+            font-weight: 400 !important;
+            color: #334155 !important;
+            line-height: 1.65 !important;
+            margin-bottom: 6px !important; /* Compact, tight spacing matching editor! */
+            padding-left: 4px !important;
+            position: static !important;
+            display: list-item !important;
+            border: none !important;
+            background: transparent !important;
+            height: auto !important;
+            width: auto !important;
+            float: none !important;
+        }
+        .article-content li::before {
+            content: none !important;
+            display: none !important;
+        }
+        /* When Summernote wraps list item text in <p>, collapse the <p> margin */
+        .article-content li > p,
+        .article-content li p {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            display: inline !important;
+            line-height: inherit !important;
+            color: inherit !important;
+        }
+        .article-content li:last-child {
+            margin-bottom: 0 !important;
+        }
+
+        /* Blockquotes */
         .article-content blockquote {
             border-left: 4px solid #fdc800;
             background: #f8fafc;
-            padding: 22px 28px;
-            border-radius: 0 14px 14px 0;
+            padding: 16px 24px;
+            border-radius: 0 12px 12px 0;
             font-style: italic;
             color: #1e293b;
-            font-size: 1.08rem;
-            margin: 32px 0;
-            line-height: 1.7;
+            font-size: 1.05rem;
+            margin: 20px 0 !important;
+            line-height: 1.65;
         }
+        .article-content blockquote p {
+            margin-bottom: 0 !important;
+        }
+
+        /* Images inside content */
         .article-content img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 14px;
-            margin: 22px 0;
+            max-width: 100% !important;
+            height: auto !important;
+            border-radius: 12px;
+            margin: 18px auto !important;
+            display: block;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
         }
 
         /* Tags Section */
