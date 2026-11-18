@@ -679,22 +679,6 @@ function initSummernoteEditor() {
                     for (let i = 0; i < files.length; i++) {
                         uploadEditorImage(files[i]);
                     }
-                },
-                onPaste: function(e) {
-                    const clipboardData = e.originalEvent.clipboardData || window.clipboardData;
-                    if (clipboardData && clipboardData.items) {
-                        for (let i = 0; i < clipboardData.items.length; i++) {
-                            const item = clipboardData.items[i];
-                            if (item.type && item.type.indexOf("image") !== -1) {
-                                const file = item.getAsFile();
-                                if (file) {
-                                    uploadEditorImage(file);
-                                    e.preventDefault();
-                                    break;
-                                }
-                            }
-                        }
-                    }
                 }
             }
         });
@@ -716,8 +700,23 @@ function handleQuickImageUpload(input) {
     }
 }
 
+// Global deduplication trackers to guarantee an image is never uploaded or inserted twice
+let lastUploadedSignature = '';
+let lastUploadedTime = 0;
+
 // Upload inline Summernote image to server instead of massive Base64
 function uploadEditorImage(file) {
+    if (!file) return;
+
+    // Deduplication guard: ignore identical file triggers within 1.5 seconds
+    const sig = (file.name || 'image') + '_' + file.size + '_' + (file.lastModified || 0);
+    const now = Date.now();
+    if (sig === lastUploadedSignature && (now - lastUploadedTime) < 1500) {
+        return;
+    }
+    lastUploadedSignature = sig;
+    lastUploadedTime = now;
+
     const data = new FormData();
     data.append("image", file);
     const csrfToken = document.querySelector('input[name="csrf_token"]');
@@ -770,13 +769,12 @@ function uploadEditorImage(file) {
 // Event bindings for Summernote Modal Dialogs (Fixes Bootstrap 5 modal glitch)
 if (window.jQuery) {
     $(document).on('change', '.note-image-input', function(e) {
-        if (this.files && this.files.length) {
-            for (let i = 0; i < this.files.length; i++) {
-                uploadEditorImage(this.files[i]);
-            }
-            $(this).closest('.note-modal').removeClass('open').hide();
+        // Summernote's built-in handler calls onImageUpload.
+        // We only ensure the dialog modal and backdrop close cleanly.
+        setTimeout(function() {
+            $('.note-modal').removeClass('open').hide();
             $('.note-modal-backdrop').remove();
-        }
+        }, 100);
     });
 
     $(document).on('click', '.note-modal .close, .note-modal [data-dismiss="modal"]', function(e) {
